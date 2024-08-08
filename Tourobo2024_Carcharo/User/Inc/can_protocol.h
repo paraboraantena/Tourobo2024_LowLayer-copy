@@ -12,11 +12,15 @@
 
 typedef enum{
 	ROBOMASTER_ID = 0x200,
+	ACTZ_ID = 0x400,
 	SHOKI_ID = 0x300,
 } CAN_ID;
 
-typedef enum{
 
-};
+typedef enum{
+	ROBOMASTER_MASK = 0x7F0,
+	ACTZ_MASK = 0x7F0,
+	SHOKI_MASK = 0x7F0,
+} CAN_MASK;
 
 #endif /* INC_CAN_PROTOCOL_H_ */
