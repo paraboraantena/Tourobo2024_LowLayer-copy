@@ -59,7 +59,9 @@ int state_curr[4] = {};
 int pulse_count[4] = {};
 float prev_angle[4] = {};
 float angle[4] = {};
-float anguler_velocity[4] = {};
+float deg_per_second[4] = {};
+int16_t rpm[4] = {0};
+
 
 //PinConfiguration
 GPIO_TypeDef* encoder_ports[4][2] = {{ENC1A_GPIO_Port, ENC1B_GPIO_Port},
@@ -91,8 +93,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		for(int i=0; i<4; i++)
 		{
-			anguler_velocity[i] = (angle[i] - prev_angle[i])/DELTA_T;
+			deg_per_second[i] = (angle[i] - prev_angle[i])/DELTA_T;
 			prev_angle[i] = angle[i];
+
+			// deg/s to rpm
+			rpm[i] = (int16_t)(deg_per_second[i] * 60 / 360);
 		}
 	}
 }
@@ -679,23 +684,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     	{
     		if (GPIO_Pin == encoder_pins[i][j])
     		{
-				int change = 0;
+					int change = 0;
 
-				state_curr[i] = (HAL_GPIO_ReadPin(encoder_ports[i][0], encoder_pins[i][0]) << 1) |
-							   HAL_GPIO_ReadPin(encoder_ports[i][1], encoder_pins[i][1]);
-				if (((state_curr[i] ^ state_prev[i]) != INVALID) && (state_curr[i] != state_prev[i]))
-				{
-					change = (state_prev[i] & PREV_MASK) ^ ((state_curr[i] & CURR_MASK) >> 1);
-					if (change == 0)
+					state_curr[i] = (HAL_GPIO_ReadPin(encoder_ports[i][0], encoder_pins[i][0]) << 1) |
+									 HAL_GPIO_ReadPin(encoder_ports[i][1], encoder_pins[i][1]);
+					if (((state_curr[i] ^ state_prev[i]) != INVALID) && (state_curr[i] != state_prev[i]))
 					{
-						change = -1;
+						change = (state_prev[i] & PREV_MASK) ^ ((state_curr[i] & CURR_MASK) >> 1);
+						if (change == 0)
+						{
+							change = -1;
+						}
+						pulse_count[i] -= change;
 					}
-					pulse_count[i] -= change;
-				}
-				angle[i] = (360 / PULSE_PER_REV)*pulse_count[i];
-				state_prev[i] = state_curr[i];
-				return;
-			}
+					angle[i] = (360 / PULSE_PER_REV)*pulse_count[i];
+					state_prev[i] = state_curr[i];
+					return;
+    		}
     	}
     }
 }
