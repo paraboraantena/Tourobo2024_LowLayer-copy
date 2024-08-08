@@ -60,6 +60,7 @@ int pulse_count[4] = {};
 float prev_angle[4] = {};
 float angle[4] = {};
 float deg_per_second[4] = {};
+float rpm_float[4] = {0};
 int16_t rpm[4] = {0};
 
 
@@ -97,7 +98,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			prev_angle[i] = angle[i];
 
 			// deg/s to rpm
-			rpm[i] = (int16_t)(deg_per_second[i] * 60 / 360);
+			rpm_float[i] = deg_per_second[i] * 60 / 360;
+			rpm[i] = (int16_t)rpm_float[i];
 		}
 	}
 }
