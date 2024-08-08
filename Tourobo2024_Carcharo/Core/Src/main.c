@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "arm_math.h"
 #include "sockets.h"
+#include "robomaster.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,56 +72,14 @@ void StartDefaultTask(void const * argument);
 #define F7_PORT 4001
 #define PC_PORT 4001
 
-// ???��?��??��?��?スト用
+// ???��?��??��?��?スト用
 uint32_t id;
 uint32_t dlc;
 uint32_t data[8];
 //int16_t omega;
 int16_t torque;
 
-typedef struct {
-	// Input torque target
-	int16_t TargetTorque;
-	// Current angle
-	int16_t Angle;
-	// Current angular velocity
-	int16_t AngularVelocity;
-	// Input torque feedback
-	int16_t FeedbackTorque;
-	// Motor Temperature
-	uint8_t MotorTemperature;
-	// Update Check
-	uint32_t Event;
-} RobomasterTypedef;
-
-void Robomaster_InitZero(RobomasterTypedef *Robomaster) {
-	// Input torque target
-	Robomaster->TargetTorque = 0;
-	// Current angle
-	Robomaster->Angle = 0;
-	// Current angular velocity
-	Robomaster->AngularVelocity = 0;
-	// Input torque feedback
-	Robomaster->FeedbackTorque = 0;
-	// Motor Temperature
-	Robomaster->MotorTemperature = 0;
-	// Update Check
-	Robomaster->Event = 0;
-}
-
-void Robomaster_RxCAN(RobomasterTypedef *Robomaster, uint8_t *RxData) {
-	// Current angle
-	Robomaster->Angle = RxData[0] >> 8 | RxData[1];
-	// Current angular velocity
-	Robomaster->AngularVelocity = RxData[2] >> 8 | RxData[3];
-	// Input torque feedback
-	Robomaster->FeedbackTorque = RxData[4] >> 8 | RxData[5];
-	// Motor temperature
-	Robomaster->MotorTemperature = RxData[6];
-	// Update Check
-	Robomaster->Event = 1;
-}
-
+// ロボマス用構造体宣言
 RobomasterTypedef Robomaster[4];
 
 // CAN受信コールバック関数
@@ -141,27 +100,27 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
 			// 送信
 			if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-				// 送信用構�??体�????��?��??��?��定義
+				// 送信用構�??体�????��?��??��?��定義
 				CAN_TxHeaderTypeDef TxHeader;
-				// IDの設???��?��??��?��?
+				// IDの設???��?��??��?��?
 				TxHeader.StdId = 0x200;
 				// 標準IDを使用
 				TxHeader.IDE = CAN_ID_STD;
-				// ???��?��??��?��?ータフレー???��?��??��?��? or リモートフレー???��?��??��?��?
+				// ???��?��??��?��?ータフレー???��?��??��?��? or リモートフレー???��?��??��?��?
 				TxHeader.RTR = CAN_RTR_DATA;
-				// ???��?��??��?��?ータ長???��?��??��?��? [byte]
+				// ???��?��??��?��?ータ長???��?��??��?��? [byte]
 				TxHeader.DLC = 8;
-				// タイ???��?��??��?��?スタン???��?��??��?��?
+				// タイ???��?��??��?��?スタン???��?��??��?��?
 				TxHeader.TransmitGlobalTime = DISABLE;
-				// 8byteの送信???��?��??��?��?ータ
+				// 8byteの送信???��?��??��?��?ータ
 				uint8_t TxData[8] = { 0 };
 				for (int i = 0; i < 4; i++) {
 					TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
 					TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
 				}
-				// 送信に使ったTxMailboxが�????��?��??��?��納される
+				// 送信に使ったTxMailboxが�????��?��??��?��納される
 				uint32_t TxMailbox;
-				// メ???��?��??��?��?セージ送信
+				// メ???��?��??��?��?セージ送信
 				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
 			}
 		}
@@ -202,43 +161,6 @@ int main(void)
   MX_CAN2_Init();
   MX_CAN3_Init();
   /* USER CODE BEGIN 2 */
-
-	/* フィルタ設????��?��??��?��???��?��??��?��? */
-	/* マスクモードではfid & fmask == receve_id & fmaskならFIFOに受信????��?��??��?��???��?��??��?��?ータを�?????��?��??��?��???��?��??��?��納，それ以外�?????��?��??��?��???��?��??��?��破????��?��??��?��???��?��??��?��?します�?
-	 * 標準IDの場合，fidが�?????��?��??��?��???��?��??��?��納されるのはレジスタの上か????��?��??��?��???��?��??��?��?11bitです�?
-	 * つまり，標準IDを使????��?��??��?��???��?��??��?��?場合，fidを左5bitシフトさせてHIGHに書き込み?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��LOWには0を書き込???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��?ことになります�?
-	 */
-	// フィルタの構�??体定義
-	CAN_FilterTypeDef filter_hcan2;
-	// IDとマスクの設定（この????��?��??��?��???��?��??��?��?み合わせ�?????��?��??��?��???��?��??��?��場合�?0x200 -- 0x20Fまでを取得できる?????��?��??��?��???��?��??��?��?
-	uint32_t fid = 0x200;
-	uint32_t fmask = 0xFF0;
-	/* ???��?��??��?��?スト用 */
-//	fid = 0;
-//	fmask = 0;
-	/**/
-	filter_hcan2.FilterIdHigh = fid << 5;
-	filter_hcan2.FilterIdLow = 0;
-	filter_hcan2.FilterMaskIdHigh = fmask << 5;
-	filter_hcan2.FilterMaskIdLow = 0;
-	// "filter_hcan2"に通した後�?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?ータの格納�?????��?��??��?��???��?��??��?��に"FIFO0"を選????��?��??��?��???��?��??��?��?
-	filter_hcan2.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	filter_hcan2.FilterBank = 0;
-	filter_hcan2.FilterMode = CAN_FILTERMODE_IDMASK;
-	filter_hcan2.FilterScale = CAN_FILTERSCALE_32BIT;
-	filter_hcan2.FilterActivation = CAN_FILTER_ENABLE;
-	filter_hcan2.SlaveStartFilterBank = 0;
-	// filter適用
-	HAL_CAN_ConfigFilter(&hcan2, &filter_hcan2);
-	// hcan2開�?
-	HAL_CAN_Start(&hcan2);
-	// hcan2割り込み有効???��?��??��?��?
-	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-
-	// ロボ�???��?��ス構�??体�???��?��期�?
-	for (int i = 0; i < 4; i++) {
-		Robomaster_InitZero(&Robomaster[i]);
-	}
 
   /* USER CODE END 2 */
 
@@ -487,9 +409,96 @@ void StartDefaultTask(void const * argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+
+	// フィルタの構造体宣言
+	CAN_FilterTypeDef filter;
+	// IDとMaskの変数宣言
+	uint32_t fid;
+	uint32_t fmask;
+
+	/* CAN2 FIFO0 (For Robomaster) */
+	// ID and Mask Register
+	fid = 0x200;
+	fmask = 0x7F0;
+	// CAN2のFilter Bankは14から
+	filter.SlaveStartFilterBank = 14;
+	// Filter Bank 14に設定開始
+	filter.FilterBank = 14;
+	// For FIFO0
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	filter.FilterActivation = CAN_FILTER_ENABLE;
+	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+	// ID and Mask
+	filter.FilterIdHigh = fid << 5;
+	filter.FilterIdLow = 0;
+	filter.FilterMaskIdHigh = fmask << 5;
+	filter.FilterMaskIdLow = 0;
+	// Filter適用
+	HAL_CAN_ConfigFilter(&hcan2, &filter);
+
+	/* CAN2 FIFO1 (For Encoder) */
+	// ID and Mask Register
+	fid = 0x400;
+	fmask = 0x7F0;
+	// CAN2のFilter Bankは14から
+	filter.SlaveStartFilterBank = 14;
+	// Filter Bank 15に設定開始
+	filter.FilterBank = 15;
+	// For FIFO1
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO1;
+	filter.FilterActivation = CAN_FILTER_ENABLE;
+	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+	// ID and Mask Bit Configure
+	filter.FilterIdHigh = fid << 5;
+	filter.FilterIdLow = 0;
+	filter.FilterMaskIdHigh = fmask << 5;
+	filter.FilterMaskIdLow = 0;
+	// Filter適用
+	HAL_CAN_ConfigFilter(&hcan2, &filter);
+
+	// CAN2 Start
+	HAL_CAN_Start(&hcan2);
+	// CAN2 FIFO0 and FIFO1 Enable Interrupt
+	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
+
+	// ロボマス構造体初期化
+	for (int i = 0; i < 4; i++) {
+		Robomaster_InitZero(&Robomaster[i]);
+	}
+
+	/* Configure UDP */
+	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[20] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 			17, 18, 19, 20 };
+	//アドレスを宣?��?
+	struct sockaddr_in rxAddr, txAddr;
+	//ソケ?��?トを作�??
+	int socket = lwip_socket(AF_INET, SOCK_DGRAM, 0);
+	//アドレスのメモリを確?��?
+	memset((char*) &txAddr, 0, sizeof(txAddr));
+	memset((char*) &rxAddr, 0, sizeof(rxAddr));
+	//アドレスの構�??体�??��?��?ータを定義
+	rxAddr.sin_family = AF_INET; //プロトコルファミリの設?��?(IPv4に設?��?)
+	rxAddr.sin_len = sizeof(rxAddr); //アドレスの?��?ータサイズ
+	rxAddr.sin_addr.s_addr = INADDR_ANY; //アドレスの設?��?(今回はすべてのアドレスを受け�??��れるためINADDR_ANY)
+	rxAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
+	txAddr.sin_family = AF_INET; //プロトコルファミリの?��??��?(IPv4に設?��?)
+	txAddr.sin_len = sizeof(txAddr); //アドレスの?��?ータのサイズ
+	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //アドレスの設?��?
+	txAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
+	// whileでbindを�?ってみると�?まく行く可能性�?
+//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPアドレスとソケ?��?トを紐付けて受信をできる状態に
+	while(lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)) < 0) {
+
+	}
+	socklen_t n; //受信した?��?ータのサイズ
+	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
+
+	// Variable For PID
 	float32_t Kp = 10;
 	float32_t Ki = 0.01;
 	float32_t difference = 0;
@@ -497,36 +506,13 @@ void StartDefaultTask(void const * argument)
 	int16_t TagetAngularVelocity[4] = { 0 };
 	float32_t p_value;
 	float32_t i_value;
-	//アドレスを宣?��?
-	struct sockaddr_in rxAddr, txAddr;
-	//ソケ?��?トを作�??
-	int socket = lwip_socket(AF_INET, SOCK_DGRAM, 0);
-	//アドレスのメモリを確?��?
-	memset((char*) &txAddr, 0, sizeof(txAddr));
-	memset((char*) &rxAddr, 0, sizeof(rxAddr));
-	//アドレスの構�??体�??��?��?ータを定義
-	rxAddr.sin_family = AF_INET; //プロトコルファミリの設?��?(IPv4に設?��?)
-	rxAddr.sin_len = sizeof(rxAddr); //アドレスの?��?ータサイズ
-	rxAddr.sin_addr.s_addr = INADDR_ANY; //アドレスの設?��?(今回はすべてのアドレスを受け�??��れるためINADDR_ANY)
-	rxAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
-	txAddr.sin_family = AF_INET; //プロトコルファミリの?��??��?(IPv4に設?��?)
-	txAddr.sin_len = sizeof(txAddr); //アドレスの?��?ータのサイズ
-	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //アドレスの設?��?
-	txAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
-	// whileでbindを�?ってみると�?まく行く可能性�?
-//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPアドレスとソケ?��?トを紐付けて受信をできる状態に
-	while(lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)) < 0) {
-
-	}
-	socklen_t n; //受信した?��?ータのサイズ
-	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
 
 	/* Infinite loop */
 	for (;;) {
 		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0,
-				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�??��信する
+				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�??��信する
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
-				(struct sockaddr*) &rxAddr, &len); //受信処?��?(blocking)
+				(struct sockaddr*) &rxAddr, &len); //受信処?��?(blocking)
 
 //		int16_t test = Robomaster[0].Angle;z
 		//モーターの速度制御

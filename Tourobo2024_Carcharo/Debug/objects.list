@@ -750,3 +750,4 @@
 "./Middlewares/Third_Party/LwIP/src/netif/ppp/utils.o"
 "./Middlewares/Third_Party/LwIP/src/netif/ppp/vj.o"
 "./Middlewares/Third_Party/LwIP/system/OS/sys_arch.o"
+"./User/Src/robomaster.o"

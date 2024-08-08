@@ -1,0 +1,2 @@
+../User/Src/robomaster.c:10:6:Robomaster_InitZero	16	static
+../User/Src/robomaster.c:25:6:Robomaster_RxCAN	16	static

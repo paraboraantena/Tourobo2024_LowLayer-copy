@@ -111,7 +111,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../CMSIS-DSP/Include/dsp/window_functions.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/sockets.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/inet.h \
- ../Middlewares/Third_Party/LwIP/src/include/lwip/errno.h
+ ../Middlewares/Third_Party/LwIP/src/include/lwip/errno.h \
+ ../User/Inc/robomaster.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 ../Core/Inc/stm32f7xx_hal_conf.h:
@@ -230,3 +231,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/LwIP/src/include/lwip/sockets.h:
 ../Middlewares/Third_Party/LwIP/src/include/lwip/inet.h:
 ../Middlewares/Third_Party/LwIP/src/include/lwip/errno.h:
+../User/Inc/robomaster.h:
