@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "arm_math.h"
 #include "sockets.h"
+#include "robomaster.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -78,49 +79,7 @@ uint32_t data[8];
 //int16_t omega;
 int16_t torque;
 
-typedef struct {
-	// Input torque target
-	int16_t TargetTorque;
-	// Current angle
-	int16_t Angle;
-	// Current angular velocity
-	int16_t AngularVelocity;
-	// Input torque feedback
-	int16_t FeedbackTorque;
-	// Motor Temperature
-	uint8_t MotorTemperature;
-	// Update Check
-	uint32_t Event;
-} RobomasterTypedef;
-
-void Robomaster_InitZero(RobomasterTypedef *Robomaster) {
-	// Input torque target
-	Robomaster->TargetTorque = 0;
-	// Current angle
-	Robomaster->Angle = 0;
-	// Current angular velocity
-	Robomaster->AngularVelocity = 0;
-	// Input torque feedback
-	Robomaster->FeedbackTorque = 0;
-	// Motor Temperature
-	Robomaster->MotorTemperature = 0;
-	// Update Check
-	Robomaster->Event = 0;
-}
-
-void Robomaster_RxCAN(RobomasterTypedef *Robomaster, uint8_t *RxData) {
-	// Current angle
-	Robomaster->Angle = RxData[0] >> 8 | RxData[1];
-	// Current angular velocity
-	Robomaster->AngularVelocity = RxData[2] >> 8 | RxData[3];
-	// Input torque feedback
-	Robomaster->FeedbackTorque = RxData[4] >> 8 | RxData[5];
-	// Motor temperature
-	Robomaster->MotorTemperature = RxData[6];
-	// Update Check
-	Robomaster->Event = 1;
-}
-
+// ロボマス用構造体宣言
 RobomasterTypedef Robomaster[4];
 
 // CAN受信コールバック関数
@@ -202,43 +161,6 @@ int main(void)
   MX_CAN2_Init();
   MX_CAN3_Init();
   /* USER CODE BEGIN 2 */
-
-	/* フィルタ設????��?��??��?��???��?��??��?��? */
-	/* マスクモードではfid & fmask == receve_id & fmaskならFIFOに受信????��?��??��?��???��?��??��?��?ータを�?????��?��??��?��???��?��??��?��納，それ以外�?????��?��??��?��???��?��??��?��破????��?��??��?��???��?��??��?��?します�?
-	 * 標準IDの場合，fidが�?????��?��??��?��???��?��??��?��納されるのはレジスタの上か????��?��??��?��???��?��??��?��?11bitです�?
-	 * つまり，標準IDを使????��?��??��?��???��?��??��?��?場合，fidを左5bitシフトさせてHIGHに書き込み?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��LOWには0を書き込???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��?ことになります�?
-	 */
-	// フィルタの構�??体定義
-	CAN_FilterTypeDef filter_hcan2;
-	// IDとマスクの設定（この????��?��??��?��???��?��??��?��?み合わせ�?????��?��??��?��???��?��??��?��場合�?0x200 -- 0x20Fまでを取得できる?????��?��??��?��???��?��??��?��?
-	uint32_t fid = 0x200;
-	uint32_t fmask = 0xFF0;
-	/* ???��?��??��?��?スト用 */
-//	fid = 0;
-//	fmask = 0;
-	/**/
-	filter_hcan2.FilterIdHigh = fid << 5;
-	filter_hcan2.FilterIdLow = 0;
-	filter_hcan2.FilterMaskIdHigh = fmask << 5;
-	filter_hcan2.FilterMaskIdLow = 0;
-	// "filter_hcan2"に通した後�?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?ータの格納�?????��?��??��?��???��?��??��?��に"FIFO0"を選????��?��??��?��???��?��??��?��?
-	filter_hcan2.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	filter_hcan2.FilterBank = 0;
-	filter_hcan2.FilterMode = CAN_FILTERMODE_IDMASK;
-	filter_hcan2.FilterScale = CAN_FILTERSCALE_32BIT;
-	filter_hcan2.FilterActivation = CAN_FILTER_ENABLE;
-	filter_hcan2.SlaveStartFilterBank = 0;
-	// filter適用
-	HAL_CAN_ConfigFilter(&hcan2, &filter_hcan2);
-	// hcan2開�?
-	HAL_CAN_Start(&hcan2);
-	// hcan2割り込み有効???��?��??��?��?
-	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-
-	// ロボ�???��?��ス構�??体�???��?��期�?
-	for (int i = 0; i < 4; i++) {
-		Robomaster_InitZero(&Robomaster[i]);
-	}
 
   /* USER CODE END 2 */
 
@@ -487,16 +409,71 @@ void StartDefaultTask(void const * argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+
+	// フィルタの構造体宣言
+	CAN_FilterTypeDef filter;
+	// IDとMaskの変数宣言
+	uint32_t fid;
+	uint32_t fmask;
+
+	/* CAN2 FIFO0 (For Robomaster) */
+	// ID and Mask Register
+	fid = 0x200;
+	fmask = 0x7F0;
+	// CAN2のFilter Bankは14から
+	filter.SlaveStartFilterBank = 14;
+	// Filter Bank 14に設定開始
+	filter.FilterBank = 14;
+	// For FIFO0
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	filter.FilterActivation = CAN_FILTER_ENABLE;
+	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+	// ID and Mask
+	filter.FilterIdHigh = fid << 5;
+	filter.FilterIdLow = 0;
+	filter.FilterMaskIdHigh = fmask << 5;
+	filter.FilterMaskIdLow = 0;
+	// Filter適用
+	HAL_CAN_ConfigFilter(&hcan2, &filter);
+
+	/* CAN2 FIFO1 (For Encoder) */
+	// ID and Mask Register
+	fid = 0x400;
+	fmask = 0x7F0;
+	// CAN2のFilter Bankは14から
+	filter.SlaveStartFilterBank = 14;
+	// Filter Bank 15に設定開始
+	filter.FilterBank = 15;
+	// For FIFO1
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO1;
+	filter.FilterActivation = CAN_FILTER_ENABLE;
+	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+	// ID and Mask Bit Configure
+	filter.FilterIdHigh = fid << 5;
+	filter.FilterIdLow = 0;
+	filter.FilterMaskIdHigh = fmask << 5;
+	filter.FilterMaskIdLow = 0;
+	// Filter適用
+	HAL_CAN_ConfigFilter(&hcan2, &filter);
+
+	// CAN2 Start
+	HAL_CAN_Start(&hcan2);
+	// CAN2 FIFO0 and FIFO1 Enable Interrupt
+	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
+
+	// ロボマス構造体初期化
+	for (int i = 0; i < 4; i++) {
+		Robomaster_InitZero(&Robomaster[i]);
+	}
+
+	/* Configure UDP */
+	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[20] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 			17, 18, 19, 20 };
-	float32_t Kp = 10;
-	float32_t Ki = 0.01;
-	float32_t difference = 0;
-	float32_t pre_difference = 0;
-	int16_t TagetAngularVelocity[4] = { 0 };
-	float32_t p_value;
-	float32_t i_value;
 	//アドレスを宣?��?
 	struct sockaddr_in rxAddr, txAddr;
 	//ソケ?��?トを作�??
@@ -520,6 +497,15 @@ void StartDefaultTask(void const * argument)
 	}
 	socklen_t n; //受信した?��?ータのサイズ
 	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
+
+	// Variable For PID
+	float32_t Kp = 10;
+	float32_t Ki = 0.01;
+	float32_t difference = 0;
+	float32_t pre_difference = 0;
+	int16_t TagetAngularVelocity[4] = { 0 };
+	float32_t p_value;
+	float32_t i_value;
 
 	// ARP待ち
 //	HAL_Delay(700);
