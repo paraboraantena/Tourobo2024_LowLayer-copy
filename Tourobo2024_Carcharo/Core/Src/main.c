@@ -62,14 +62,14 @@ void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 void yodai(uint8_t buff[11],int16_t targetSpeed[4]){
-	uint8_t RobomasuSpeed[2];//Robomasuの角速度が10進数で表現されている.
+	uint8_t RobomasSpeed[2];//Robomasの角速度が10進数で表現されている.
 	uint8_t shoki;//shokiの目標エアシリ状態が10進数で表現されている.
-	uint8_t uatar;//uatorの目標エアシリ状態が10進数で表現されている.
-	uint8_t kansu;//計4つの関数の状態を保存.
+	uint8_t uator;//uatorの目標エアシリ状態が10進数で表現されている.
+	uint8_t functions;//計4つの関数の状態を保存.
 	uint8_t shokiAir[6];
-	uint8_t uatarAir[4];
+	uint8_t uatorAir[4];
 	uint8_t shokiAirPre;
-	uint8_t uatarAirPre;
+	uint8_t uatorAirPre;
 
 	/*rxbufの1~8番目をロボマスのターゲット角速度に代入(もともとは16ビットなので8ビットのデータを2つずつ結合する)*/
 	for(uint8_t i=0;i<4;i++){
@@ -77,8 +77,8 @@ void yodai(uint8_t buff[11],int16_t targetSpeed[4]){
 	}
 
 	shoki = buff[8];
-	uatar = buff[9];
-	kansu = buff[10];
+	uator = buff[9];
+	function = buff[10];
 
 //	shokiAirPre = buff[8];//途中です.目標エアシリ状態を01であらわそうとした.いらない機能かもしれない.
 //	uatarAirPre = buff[9];
