@@ -61,7 +61,37 @@ static void MX_CAN3_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
+void yodai(uint8_t buff[11],int16_t targetSpeed[4]){
+	uint8_t RobomasuSpeed[2];//Robomasuの角速度が10進数で表現されている.
+	uint8_t shoki;//shokiの目標エアシリ状態が10進数で表現されている.
+	uint8_t uatar;//uatorの目標エアシリ状態が10進数で表現されている.
+	uint8_t kansu;//計4つの関数の状態を保存.
+	uint8_t shokiAir[6];
+	uint8_t uatarAir[4];
+	uint8_t shokiAirPre;
+	uint8_t uatarAirPre;
 
+	/*rxbufの1~8番目をロボマスのターゲット角速度に代入(もともとは16ビットなので8ビットのデータを2つずつ結合する)*/
+	for(uint8_t i=0;i<4;i++){
+		targetSpeed[i] = buff[2*i]<<8 | buff[2*i+1];
+	}
+
+	shoki = buff[8];
+	uatar = buff[9];
+	kansu = buff[10];
+
+//	shokiAirPre = buff[8];//途中です.目標エアシリ状態を01であらわそうとした.いらない機能かもしれない.
+//	uatarAirPre = buff[9];
+//	for(uint8_t j=0;j<6;j++){
+//		if(shokiAirPre%2==1){
+//			shokiAirPre--;
+//			shokiAir[6-j]=1;
+//		}else{
+//			shokiAir[6-j]=0;
+//		}
+//		shokiAirPre/=2;
+//	}
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -471,7 +501,7 @@ void StartDefaultTask(void const * argument)
 
 	/* Configure UDP */
 	// Data Buffer For UDP
-	int16_t rxbuf[16] = { 0 };
+	uint8_t rxbuf[11] = { 0 };// 変数の型をint16_tから変更yodai
 	int16_t txbuf[20] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 			17, 18, 19, 20 };
 	//アドレスを宣?��?
@@ -503,16 +533,18 @@ void StartDefaultTask(void const * argument)
 	float32_t Ki = 0.01;
 	float32_t difference = 0;
 	float32_t pre_difference = 0;
-	int16_t TagetAngularVelocity[4] = { 0 };
+	int16_t TagetAngularVelocity[4] = {  };
 	float32_t p_value;
 	float32_t i_value;
-
 	/* Infinite loop */
 	for (;;) {
 		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0,
 				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�??��信する
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
 				(struct sockaddr*) &rxAddr, &len); //受信処?��?(blocking)
+
+		yodai(rxbuf,TagetAngularVelocity);
+
 
 //		int16_t test = Robomaster[0].Angle;z
 		//モーターの速度制御
