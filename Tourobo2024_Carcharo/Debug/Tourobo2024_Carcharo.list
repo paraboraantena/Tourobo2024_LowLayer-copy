@@ -43,13 +43,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  19 .debug_line   000332d7  00000000  00000000  0007ecd7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .debug_str    0011da70  00000000  00000000  000b1fae  2**0
+ 20 .debug_str    0011dadc  00000000  00000000  000b1fae  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .comment      00000043  00000000  00000000  001cfa1e  2**0
+ 21 .comment      00000043  00000000  00000000  001cfa8a  2**0
                   CONTENTS, READONLY
- 22 .debug_frame  00008e70  00000000  00000000  001cfa64  2**2
+ 22 .debug_frame  00008e70  00000000  00000000  001cfad0  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_line_str 0000007f  00000000  00000000  001d88d4  2**0
+ 23 .debug_line_str 0000007f  00000000  00000000  001d8940  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -659,9 +659,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
  8000750:	4603      	mov	r3, r0
  8000752:	2b00      	cmp	r3, #0
  8000754:	d03e      	beq.n	80007d4 <HAL_CAN_RxFifo0MsgPendingCallback+0x128>
-				// 送信用構�??体�????��?��??��?��定義
+				// 送信用構�??体�????��?��??��?��定義
 				CAN_TxHeaderTypeDef TxHeader;
-				// IDの設???��?��??��?��?
+				// IDの設???��?��??��?��?
 				TxHeader.StdId = 0x200;
  8000756:	f44f 7300 	mov.w	r3, #512	@ 0x200
  800075a:	617b      	str	r3, [r7, #20]
@@ -669,19 +669,19 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 				TxHeader.IDE = CAN_ID_STD;
  800075c:	2300      	movs	r3, #0
  800075e:	61fb      	str	r3, [r7, #28]
-				// ???��?��??��?��?ータフレー???��?��??��?��? or リモートフレー???��?��??��?��?
+				// ???��?��??��?��?ータフレー???��?��??��?��? or リモートフレー???��?��??��?��?
 				TxHeader.RTR = CAN_RTR_DATA;
  8000760:	2300      	movs	r3, #0
  8000762:	623b      	str	r3, [r7, #32]
-				// ???��?��??��?��?ータ長???��?��??��?��? [byte]
+				// ???��?��??��?��?ータ長???��?��??��?��? [byte]
 				TxHeader.DLC = 8;
  8000764:	2308      	movs	r3, #8
  8000766:	627b      	str	r3, [r7, #36]	@ 0x24
-				// タイ???��?��??��?��?スタン???��?��??��?��?
+				// タイ???��?��??��?��?スタン???��?��??��?��?
 				TxHeader.TransmitGlobalTime = DISABLE;
  8000768:	2300      	movs	r3, #0
  800076a:	f887 3028 	strb.w	r3, [r7, #40]	@ 0x28
-				// 8byteの送信???��?��??��?��?ータ
+				// 8byteの送信???��?��??��?��?ータ
 				uint8_t TxData[8] = { 0 };
  800076e:	2300      	movs	r3, #0
  8000770:	60fb      	str	r3, [r7, #12]
@@ -726,9 +726,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
  80007be:	2b03      	cmp	r3, #3
  80007c0:	dddc      	ble.n	800077c <HAL_CAN_RxFifo0MsgPendingCallback+0xd0>
 				}
-				// 送信に使ったTxMailboxが�????��?��??��?��納される
+				// 送信に使ったTxMailboxが�????��?��??��?��納される
 				uint32_t TxMailbox;
-				// メ???��?��??��?��?セージ送信
+				// メ???��?��??��?��?セージ送信
 				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
  80007c2:	f107 0308 	add.w	r3, r7, #8
  80007c6:	f107 020c 	add.w	r2, r7, #12
@@ -784,18 +784,18 @@ int main(void)
  8000802:	f000 f8c7 	bl	8000994 <MX_CAN2_Init>
   MX_CAN3_Init();
  8000806:	f000 f8fb 	bl	8000a00 <MX_CAN3_Init>
-	 * つまり，標準IDを使????��?��??��?��???��?��??��?��?場合，fidを左5bitシフトさせてHIGHに書き込み?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��LOWには0を書き込???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��?ことになります�?
+	 * つまり，標準IDを使????��?��??��?��???��?��??��?��?場合，fidを左5bitシフトさせてHIGHに書き込み?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��LOWには0を書き込???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��?ことになります�?
 	 */
 	// フィルタの構�??体定義
 	CAN_FilterTypeDef filter_hcan2;
-	// IDとマスクの設定（この????��?��??��?��???��?��??��?��?み合わせ�?????��?��??��?��???��?��??��?��場合�?0x200 -- 0x20Fまでを取得できる?????��?��??��?��???��?��??��?��?
+	// IDとマスクの設定（この????��?��??��?��???��?��??��?��?み合わせ�?????��?��??��?��???��?��??��?��場合�?0x200 -- 0x20Fまでを取得できる?????��?��??��?��???��?��??��?��?
 	uint32_t fid = 0x200;
  800080a:	f44f 7300 	mov.w	r3, #512	@ 0x200
  800080e:	64bb      	str	r3, [r7, #72]	@ 0x48
 	uint32_t fmask = 0xFF0;
  8000810:	f44f 637f 	mov.w	r3, #4080	@ 0xff0
  8000814:	647b      	str	r3, [r7, #68]	@ 0x44
-	/* ???��?��??��?��?スト用 */
+	/* ???��?��??��?��?スト用 */
 //	fid = 0;
 //	fmask = 0;
 	/**/
@@ -813,7 +813,7 @@ int main(void)
 	filter_hcan2.FilterMaskIdLow = 0;
  8000826:	2300      	movs	r3, #0
  8000828:	62bb      	str	r3, [r7, #40]	@ 0x28
-	// "filter_hcan2"に通した後�?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?ータの格納�?????��?��??��?��???��?��??��?��に"FIFO0"を選????��?��??��?��???��?��??��?��?
+	// "filter_hcan2"に通した後�?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?ータの格納�?????��?��??��?��???��?��??��?��に"FIFO0"を選????��?��??��?��???��?��??��?��?
 	filter_hcan2.FilterFIFOAssignment = CAN_FILTER_FIFO0;
  800082a:	2300      	movs	r3, #0
  800082c:	62fb      	str	r3, [r7, #44]	@ 0x2c
@@ -842,13 +842,13 @@ int main(void)
 	HAL_CAN_Start(&hcan2);
  800084e:	4816      	ldr	r0, [pc, #88]	@ (80008a8 <main+0xb8>)
  8000850:	f001 f832 	bl	80018b8 <HAL_CAN_Start>
-	// hcan2割り込み有効???��?��??��?��?
+	// hcan2割り込み有効???��?��??��?��?
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
  8000854:	2102      	movs	r1, #2
  8000856:	4814      	ldr	r0, [pc, #80]	@ (80008a8 <main+0xb8>)
  8000858:	f001 fa99 	bl	8001d8e <HAL_CAN_ActivateNotification>
 
-	// ロボ�???��?��ス構�??体�???��?��期�?
+	// ロボ�???��?��ス構�??体�???��?��期�?
 	for (int i = 0; i < 4; i++) {
  800085c:	2300      	movs	r3, #0
  800085e:	64fb      	str	r3, [r7, #76]	@ 0x4c
@@ -1471,16 +1471,16 @@ void StartDefaultTask(void const * argument)
  8000c26:	605a      	str	r2, [r3, #4]
 	float32_t p_value;
 	float32_t i_value;
-	//アドレスを宣?��?
+	//アドレスを宣?��?
 	struct sockaddr_in rxAddr, txAddr;
-	//ソケ?��?トを作�??
+	//ソケ?��?トを作�??
 	int socket = lwip_socket(AF_INET, SOCK_DGRAM, 0);
  8000c28:	2200      	movs	r2, #0
  8000c2a:	2102      	movs	r1, #2
  8000c2c:	2002      	movs	r0, #2
  8000c2e:	f009 f8f3 	bl	8009e18 <lwip_socket>
  8000c32:	f8c7 0084 	str.w	r0, [r7, #132]	@ 0x84
-	//アドレスのメモリを確?��?
+	//アドレスのメモリを確?��?
 	memset((char*) &txAddr, 0, sizeof(txAddr));
  8000c36:	f107 0310 	add.w	r3, r7, #16
  8000c3a:	2210      	movs	r2, #16
@@ -1493,39 +1493,39 @@ void StartDefaultTask(void const * argument)
  8000c4a:	2100      	movs	r1, #0
  8000c4c:	4618      	mov	r0, r3
  8000c4e:	f00e ffd6 	bl	800fbfe <memset>
-	//アドレスの構�??体�??��?��?ータを定義
-	rxAddr.sin_family = AF_INET; //プロトコルファミリの設?��?(IPv4に設?��?)
+	//アドレスの構�??体�??��?��?ータを定義
+	rxAddr.sin_family = AF_INET; //プロトコルファミリの設?��?(IPv4に設?��?)
  8000c52:	2302      	movs	r3, #2
  8000c54:	f887 3021 	strb.w	r3, [r7, #33]	@ 0x21
-	rxAddr.sin_len = sizeof(rxAddr); //アドレスの?��?ータサイズ
+	rxAddr.sin_len = sizeof(rxAddr); //アドレスの?��?ータサイズ
  8000c58:	2310      	movs	r3, #16
  8000c5a:	f887 3020 	strb.w	r3, [r7, #32]
-	rxAddr.sin_addr.s_addr = INADDR_ANY; //アドレスの設?��?(今回はすべてのアドレスを受け�??��れるためINADDR_ANY)
+	rxAddr.sin_addr.s_addr = INADDR_ANY; //アドレスの設?��?(今回はすべてのアドレスを受け�??��れるためINADDR_ANY)
  8000c5e:	2300      	movs	r3, #0
  8000c60:	627b      	str	r3, [r7, #36]	@ 0x24
-	rxAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
+	rxAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
  8000c62:	f640 70a1 	movw	r0, #4001	@ 0xfa1
  8000c66:	f009 fc3b 	bl	800a4e0 <lwip_htons>
  8000c6a:	4603      	mov	r3, r0
  8000c6c:	847b      	strh	r3, [r7, #34]	@ 0x22
-	txAddr.sin_family = AF_INET; //プロトコルファミリの?��??��?(IPv4に設?��?)
+	txAddr.sin_family = AF_INET; //プロトコルファミリの?��??��?(IPv4に設?��?)
  8000c6e:	2302      	movs	r3, #2
  8000c70:	747b      	strb	r3, [r7, #17]
-	txAddr.sin_len = sizeof(txAddr); //アドレスの?��?ータのサイズ
+	txAddr.sin_len = sizeof(txAddr); //アドレスの?��?ータのサイズ
  8000c72:	2310      	movs	r3, #16
  8000c74:	743b      	strb	r3, [r7, #16]
-	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //アドレスの設?��?
+	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //アドレスの設?��?
  8000c76:	481f      	ldr	r0, [pc, #124]	@ (8000cf4 <StartDefaultTask+0x124>)
  8000c78:	f00d fc57 	bl	800e52a <ipaddr_addr>
  8000c7c:	4603      	mov	r3, r0
  8000c7e:	617b      	str	r3, [r7, #20]
-	txAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
+	txAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
  8000c80:	f640 70a1 	movw	r0, #4001	@ 0xfa1
  8000c84:	f009 fc2c 	bl	800a4e0 <lwip_htons>
  8000c88:	4603      	mov	r3, r0
  8000c8a:	827b      	strh	r3, [r7, #18]
-	// whileでbindを�?ってみると�?まく行く可能性�?
-//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPアドレスとソケ?��?トを紐付けて受信をできる状態に
+	// whileでbindを�?ってみると�?まく行く可能性�?
+//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPアドレスとソケ?��?トを紐付けて受信をできる状態に
 	while(lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)) < 0) {
  8000c8c:	bf00      	nop
  8000c8e:	f107 0320 	add.w	r3, r7, #32
@@ -1538,10 +1538,12 @@ void StartDefaultTask(void const * argument)
  8000ca2:	dbf4      	blt.n	8000c8e <StartDefaultTask+0xbe>
 
 	}
-	socklen_t n; //受信した?��?ータのサイズ
+	socklen_t n; //受信した?��?ータのサイズ
 	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
  8000ca4:	2310      	movs	r3, #16
  8000ca6:	60fb      	str	r3, [r7, #12]
+	// ARP待ち
+//	HAL_Delay(700);
 
 	/* Infinite loop */
 	for (;;) {
@@ -1555,7 +1557,7 @@ void StartDefaultTask(void const * argument)
  8000cb8:	2228      	movs	r2, #40	@ 0x28
  8000cba:	f8d7 0084 	ldr.w	r0, [r7, #132]	@ 0x84
  8000cbe:	f008 fff3 	bl	8009ca8 <lwip_sendto>
-				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�??��信する
+				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�??��信する
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
  8000cc2:	f107 0160 	add.w	r1, r7, #96	@ 0x60
  8000cc6:	f107 030c 	add.w	r3, r7, #12
