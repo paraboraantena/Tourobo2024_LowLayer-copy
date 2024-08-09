@@ -35,7 +35,7 @@
 #define KON 1
 #define CAN_SIZE 8
 #define BUF_SIZE 2
-#define MASTER_ID 0x55
+#define MASTER_ID 0x010
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,6 +71,10 @@ static void MX_TIM16_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+enum RX_COMMAND{
+	SET_THRE=0x00, START, STOP, ASK
+};
+
 volatile uint16_t adc_buf[BUF_SIZE] = {0};
 volatile float current_threshold[BUF_SIZE] = {0.0f};
 volatile bool return_flag;
@@ -115,7 +119,7 @@ int main(void)
   HAL_CAN_Start(&hcan);
   HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
   HAL_ADC_Start(&hadc1);
-  HAL_ADC_Start_DMA(&hadc1, (uint16_t*)adc_buf, BUF_SIZE);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf, BUF_SIZE);
   HAL_TIM_Base_Stop_IT(&htim16);
 
   return_flag = false;
@@ -125,6 +129,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_10) == GPIO_PIN_RESET){
+		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
+		  HAL_Delay(100);
+		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+		  HAL_Delay(100);
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -297,7 +307,22 @@ static void MX_CAN_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN_Init 2 */
+  CAN_FilterTypeDef filter;
+  uint32_t fId   =  0x010 << 21;        // フィルターID
+  uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
 
+  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上位16ビット
+  filter.FilterIdLow          = fId;                   // フィルターIDの下位16ビット
+  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上位16ビット
+  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下位16ビット
+  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モード
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格納
+  filter.FilterBank           = 0;
+  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモード
+  filter.SlaveStartFilterBank = 14;
+  filter.FilterActivation     = ENABLE;
+
+  HAL_CAN_ConfigFilter(&hcan, &filter);
   /* USER CODE END CAN_Init 2 */
 
 }
@@ -335,7 +360,7 @@ static void MX_I2C1_Init(void)
   */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
-    Error_Handler();Position
+    Error_Handler();
   }
 
   /** Configure Digital filter
@@ -441,40 +466,82 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_)
 {
     CAN_RxHeaderTypeDef rx_header;
     uint8_t rx_data[8];
-    if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data) == HAL_OK){
-        //id = (RxHeader.IDE == CAN_ID_STD)? RxHeader.StdId : RxHeader.ExtId;     // ID
-        //dlc = RxHeader.DLC;
+    if (HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &rx_header, rx_data) == HAL_OK){
+    	switch(rx_data[0]){
+    		case SET_THRE:
+    			current_threshold[KAI] = (rx_data[1]<<8 | rx_data[2])/10.0f;
+    			current_threshold[KON] = (rx_data[3]<<8 | rx_data[4])/10.0f;
+    			states[KAI] = true;
+    			states[KON] = true;
 
-    	//start signal received
-    	if(){
-    		current_threshold[KAI] ;
-    		current_threshold[KON] ;
-    		state[KAI] = true;
-    		state[KON] = true;
+    			HAL_TIM_Base_Stop_IT(&htim16);
+    			HAL_TIM_Base_Start_IT(&htim16);
+    			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, SET);
+    			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, SET);
+    			return_flag = true;
+    			break;
+    		case START:
+    			HAL_TIM_Base_Stop_IT(&htim16);
+    			HAL_TIM_Base_Start_IT(&htim16);
+    			if(rx_data[1]==KAI){
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, SET);
+				}else if(rx_data[1]==KON){
+    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, SET);
+				}
+    			return_flag = true;
+    			break;
+    		case STOP:
+    			HAL_TIM_Base_Stop_IT(&htim16);
+    			if(rx_data[1]==KAI){
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
+				}else if(rx_data[1]==KON){
+    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+				}
+    			break;
+    		case ASK:
+    			uint16_t current_data[2];
 
-    		HAL_TIM_Base_Start_IT(&htim16);
-    		return_frag = true;
+    			current_data[KAI] = adc_buf[KAI]*4096.0f/13.2f*10;
+    			current_data[KON] = adc_buf[KON]*4096.0f/13.2f*10;
+
+    			CAN_TxHeaderTypeDef tx_header;
+    			uint32_t tx_mailbox;
+    			uint8_t tx_data[CAN_SIZE];
+    			if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan)>0){
+    				tx_header.StdId = MASTER_ID;
+    				tx_header.RTR = CAN_RTR_DATA;
+    				tx_header.IDE = CAN_ID_EXT;
+    				tx_header.DLC = CAN_SIZE;
+    				tx_header.TransmitGlobalTime = DISABLE;
+    				tx_data[0] = ASK;
+    				tx_data[1] = current_data[KAI]>>8;
+    				tx_data[2] = current_data[KAI]&0xff;
+    				tx_data[3] = current_data[KON]>>8;
+    				tx_data[4] = current_data[KON]&0xff;
+    				HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, &tx_mailbox);
+    			}
+    			break;
     	}
     }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
 	float current_buf[BUF_SIZE];
-	if(htim == TIM16){
-		current_buf[0] = adc_buf[0]*4096.0f/13.2f;
-		current_buf[1] = adc_buf[1]*4096.0f/13.2f;
+	if(htim->Instance == TIM16){
+		current_buf[KAI] = adc_buf[KAI]*4096.0f/13.2f;
+		current_buf[KON] = adc_buf[KON]*4096.0f/13.2f;
 
 		if(current_buf[0]>current_threshold[0]){
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
-    		state[KAI] = false;
+    		states[KAI] = false;
 		}
 		if(current_buf[1]>current_threshold[1]){
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, false);
-    		state[KON] = false;
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+    		states[KON] = false;
 		}
 
 		if(return_flag){
@@ -487,19 +554,39 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
 				tx_header.IDE = CAN_ID_EXT;
 				tx_header.DLC = CAN_SIZE;
 				tx_header.TransmitGlobalTime = DISABLE;
-				tx_data[0] ;
+				tx_data[0] = START;
+				tx_data[1] = states[KAI];
+				tx_data[2] = states[KON];
 				HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, &tx_mailbox);
-
-				return_flag = false;
 			}
+
+			return_flag = false;
 		}
 	}
 }
 
 void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc){
-	if(hadc == ADC1){
+	if(hadc->Instance == ADC1){
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+
+		states[KAI] = false;
+		states[KON] = false;
+
+		CAN_TxHeaderTypeDef tx_header;
+		uint32_t tx_mailbox;
+		uint8_t tx_data[CAN_SIZE];
+		if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan)>0){
+			tx_header.StdId = MASTER_ID;
+			tx_header.RTR = CAN_RTR_DATA;
+			tx_header.IDE = CAN_ID_EXT;
+			tx_header.DLC = CAN_SIZE;
+			tx_header.TransmitGlobalTime = DISABLE;
+			tx_data[0] = STOP;
+			tx_data[1] = states[KAI];
+			tx_data[2] = states[KON];
+			HAL_CAN_AddTxMessage(&hcan, &tx_header, tx_data, &tx_mailbox);
+		}
 	}
 }
 /* USER CODE END 4 */
