@@ -61,7 +61,7 @@ static void MX_CAN3_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-void yodai(uint8_t buff[11],int16_t targetSpeed[4]){
+void sort(uint8_t buff[11],int16_t targetSpeed[4]){
 	uint8_t RobomasSpeed[2];//Robomasの角速度が10進数で表現されている.
 	uint8_t shoki;//shokiの目標エアシリ状態が10進数で表現されている.
 	uint8_t uator;//uatorの目標エアシリ状態が10進数で表現されている.
@@ -78,19 +78,8 @@ void yodai(uint8_t buff[11],int16_t targetSpeed[4]){
 
 	shoki = buff[8];
 	uator = buff[9];
-	function = buff[10];
+	functions = buff[10];
 
-//	shokiAirPre = buff[8];//途中です.目標エアシリ状態を01であらわそうとした.いらない機能かもしれない.
-//	uatarAirPre = buff[9];
-//	for(uint8_t j=0;j<6;j++){
-//		if(shokiAirPre%2==1){
-//			shokiAirPre--;
-//			shokiAir[6-j]=1;
-//		}else{
-//			shokiAir[6-j]=0;
-//		}
-//		shokiAirPre/=2;
-//	}
 }
 /* USER CODE END PFP */
 
@@ -543,7 +532,7 @@ void StartDefaultTask(void const * argument)
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
 				(struct sockaddr*) &rxAddr, &len); //受信処?��?(blocking)
 
-		yodai(rxbuf,TagetAngularVelocity);
+		sort(rxbuf,TagetAngularVelocity);
 
 
 //		int16_t test = Robomaster[0].Angle;z
