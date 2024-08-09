@@ -32,7 +32,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef struct Que{
-	float data[QUE_SIZE];
+	float data[16];
 	uint8_t pointer;
 	uint8_t size;
 }Que;
@@ -41,7 +41,6 @@ typedef struct Que{
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define DELTA_T 0.01
-#define QUE_SIZE 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -149,7 +148,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	mean.size = 0u;
+	mean.size = 10;
 	mean.pointer = 0u;
   /* USER CODE END 1 */
 
@@ -419,9 +418,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
-  /* init code for LWIP */
-  MX_LWIP_Init();
-  /* USER CODE BEGIN 5 */
+	/* init code for LWIP */
+	  MX_LWIP_Init();
+	  /* USER CODE BEGIN 5 */
 
 	// フィルタの構造体宣言
 	CAN_FilterTypeDef filter;
@@ -477,16 +476,26 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 
-	// ロボマス構造体初期化
+	// ゲイン設定
+	float32_t Kp = 10;
+	float32_t Ki = 0.00;
+	float32_t Kd = 0.00;
+	float32_t f_i = 50.0f;	//for feedforwared
+	float32_t f_j = 5.0f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
-		Robomaster_InitZero(&Robomaster[i]);
+		// Robomaster Initialize
+		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
+		// PID Initialize
+		Robomaster[i].PID.Kp = Kp;
+		Robomaster[i].PID.Ki = Ki;
+		Robomaster[i].PID.Kd = Kd;
+		arm_pid_init_f32(&Robomaster[i].PID, 1);
 	}
 
 	/* Configure UDP */
 	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
-	int16_t txbuf[20] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-			17, 18, 19, 20 };
+	int16_t txbuf[16] = { 0 };
 	//アドレスを宣?��?
 	struct sockaddr_in rxAddr, txAddr;
 	//ソケ?��?トを作�??
@@ -511,14 +520,6 @@ void StartDefaultTask(void const * argument)
 	socklen_t n; //受信した?��?ータのサイズ
 	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
 
-	// Variable For PID
-	float32_t Kp = 10;
-	float32_t Ki = 0.01;
-	float32_t difference = 0;
-	float32_t pre_difference = 0;
-	int16_t TagetAngularVelocity[4] = { 0 };
-	float32_t p_value;
-	float32_t i_value;
 
 	// ARP待ち
 //	HAL_Delay(700);
@@ -530,6 +531,30 @@ void StartDefaultTask(void const * argument)
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
 				(struct sockaddr*) &rxAddr, &len); //受信処?��?(blocking)
 
+		for(int i = 0; i < 4; i++) {
+			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] * 19 / 100;
+			txbuf[i] = Robomaster[i].AngularVelocity * 100;
+		}
+
+//		shoki = buff[8];
+//		uator = buff[9];
+//		functions = buff[10];
+
+//		sort(rxbuf,TagetAngularVelocity);
+
+
+		// モーターの速度制御
+		for (int i = 0; i < 4; i++) {
+			if (Robomaster[i].Event == 1) {
+				// 誤差e[n]の計算
+				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].AngularVelocity;
+				// PID Controller
+//				Robomaster[i].PID.state[2] = 0.0f;
+				Robomaster[i].TargetTorque = (int16_t)arm_pid_f32(&Robomaster[i].PID, Robomaster[i].AngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
+//				Robomaster[i].TargetTorque = (int16_t)(Robomaster[i].AngularVelocityError * Robomaster[i].PID.Kp);
+				Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
+			}
+		}
 //		int16_t test = Robomaster[0].Angle;z
 		//モーターの速度制御
 //		for (int i = 0; i < 4; i++) {
