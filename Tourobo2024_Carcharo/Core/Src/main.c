@@ -466,9 +466,9 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 
 	// ゲイン設定
-	float32_t Kp = 5;
+	float32_t Kp = 10;
 	float32_t Ki = 0.00;
-	float32_t Kd = 1.00;
+	float32_t Kd = 0.00;
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
@@ -522,7 +522,7 @@ void StartDefaultTask(void const * argument)
 
 		/*rxbufの1~8番目をロボマスのターゲット角速度に代入(もともとは16ビットなので8ビットのデータを2つずつ結合する)*/
 		for(int i = 0; i < 4; i++) {
-			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] / 100;
+			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] * 19 / 100;
 			txbuf[i] = Robomaster[i].AngularVelocity * 100;
 		}
 
@@ -539,6 +539,7 @@ void StartDefaultTask(void const * argument)
 				// 誤差e[n]の計算
 				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].AngularVelocity;
 				// PID Controller
+//				Robomaster[i].PID.state[2] = 0.0f;
 				Robomaster[i].TargetTorque = (int16_t)arm_pid_f32(&Robomaster[i].PID, Robomaster[i].AngularVelocityError);
 //				Robomaster[i].TargetTorque = (int16_t)(Robomaster[i].AngularVelocityError * Robomaster[i].PID.Kp);
 			}
