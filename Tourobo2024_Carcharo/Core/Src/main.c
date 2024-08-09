@@ -61,26 +61,7 @@ static void MX_CAN3_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-//void sort(uint8_t *buff[11]){
-//	uint8_t RobomasSpeed[2];//Robomasの角速度が10進数で表現されている.
-//	uint8_t data_to_shoki[1];//shokiの目標エアシリ状態が10進数で表現されている.
-//	uint8_t functions[1];//計4つの関数の状態を保存.
-//	uint8_t data_to_Actz[1];//uatorの目標エアシリ状態が10進数で表現されている.
-//	uint8_t data_from_shoki[1];
-//	uint8_t data_from_uator[1];
-//	uint8_t data_from_Actz[1];
-//
-//
-//	/*rxbufの1~8番目をロボマスのターゲット角速度に代入(もともとは16ビットなので8ビットのデータを2つずつ結合する)*/
-//	for(uint8_t i=0;i<4;i++){
-//		Robomaster[i].AngularVelocity = buff[2*i]<<8 | buff[2*i+1];
-//	}
-//
-//	shoki = buff[8];
-//	uator = buff[9];
-//	functions = buff[10];
-//
-//}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -485,10 +466,9 @@ void StartDefaultTask(void const * argument)
 
 	// ロボマス構造体初期化
 	for (int i = 0; i < 4; i++) {
-//		Robomaster_InitZero(&Robomaster[i]);
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
 		// ゲイン設定
-		Robomaster[i].PID.Kp = 10.00;
+		Robomaster[i].PID.Kp = 20.00;
 		Robomaster[i].PID.Ki = 0.00;
 		Robomaster[i].PID.Kd = 0.00;
 		// PID Initialize
@@ -497,8 +477,7 @@ void StartDefaultTask(void const * argument)
 
 	/* Configure UDP */
 	// Data Buffer For UDP
-	int16_t rxbuf[16] = { 0 };// 変数の型をint16_tから変更yodai
-//	int16_t txbuf[20] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[16] = { 0 };
 	//アドレスを宣?��?
 	struct sockaddr_in rxAddr, txAddr;
@@ -523,15 +502,6 @@ void StartDefaultTask(void const * argument)
 	}
 	socklen_t n; //受信した?��?ータのサイズ
 	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
-
-	// Variable For PID
-	float32_t Kp = 10;
-	float32_t Ki = 0.01;
-	float32_t difference = 0;
-	float32_t pre_difference = 0;
-	int16_t TagetAngularVelocity[4] = { 0 };
-	float32_t p_value;
-	float32_t i_value;
 
 	/* Infinite loop */
 	for (;;) {
@@ -559,26 +529,13 @@ void StartDefaultTask(void const * argument)
 //		sort(rxbuf,TagetAngularVelocity);
 
 
-//		int16_t test = Robomaster[0].Angle;
 		// モーターの速度制御
 		for (int i = 0; i < 4; i++) {
 			if (Robomaster[i].Event == 1) {
+				// 誤差e[n]の計算
 				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].AngularVelocity;
+				// PID Controller
 				Robomaster[i].TargetTorque = (int16_t)arm_pid_f32(&Robomaster[i].PID, Robomaster[i].AngularVelocityError);
-//				Robomaster[i].Event = 0;
-//
-//				TagetAngularVelocity[i] = rxbuf[i];
-//
-//				difference = TagetAngularVelocity[i] - Robomaster[i].AngularVelocity;
-//
-//				//pi制御
-//				p_value = difference;
-//				i_value += (difference + pre_difference) * (DELTA_T / 2);
-//				Robomaster[i].TargetTorque = p_value * Kp; //+ i_value*Ki;
-//				pre_difference = difference;
-//
-//				txbuf[i] = Robomaster[i].AngularVelocity;
-
 			}
 		}
 	}
