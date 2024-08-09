@@ -63,13 +63,13 @@ void StartDefaultTask(void const * argument);
 /* USER CODE BEGIN PFP */
 void sort(uint8_t buff[11],int16_t targetSpeed[4]){
 	uint8_t RobomasSpeed[2];//Robomasの角速度が10進数で表現されている.
-	uint8_t shoki;//shokiの目標エアシリ状態が10進数で表現されている.
-	uint8_t uator;//uatorの目標エアシリ状態が10進数で表現されている.
-	uint8_t functions;//計4つの関数の状態を保存.
-	uint8_t shokiAir[6];
-	uint8_t uatorAir[4];
-	uint8_t shokiAirPre;
-	uint8_t uatorAirPre;
+	uint8_t data_to_shoki[1];//shokiの目標エアシリ状態が10進数で表現されている.
+	uint8_t functions[1];//計4つの関数の状態を保存.
+	uint8_t data_to_Actz[1];//uatorの目標エアシリ状態が10進数で表現されている.
+	uint8_t data_from_shoki[1];
+	uint8_t data_from_uator[1];
+	uint8_t data_from_Actz[1];
+
 
 	/*rxbufの1~8番目をロボマスのターゲット角速度に代入(もともとは16ビットなので8ビットのデータを2つずつ結合する)*/
 	for(uint8_t i=0;i<4;i++){
