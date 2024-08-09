@@ -1,3 +1,0 @@
-../CMSIS-DSP/Source/TransformFunctions/arm_cfft_q31.c:662:6:arm_cfft_q31	32	static
-../CMSIS-DSP/Source/TransformFunctions/arm_cfft_q31.c:719:6:arm_cfft_radix4by2_q31	232	static
-../CMSIS-DSP/Source/TransformFunctions/arm_cfft_q31.c:780:6:arm_cfft_radix4by2_inverse_q31	232	static
