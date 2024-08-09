@@ -31,12 +31,17 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct Que{
+	float data[QUE_SIZE];
+	uint8_t pointer;
+	uint8_t size;
+}Que;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define DELTA_T 0.01
+#define QUE_SIZE 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -78,6 +83,7 @@ uint32_t dlc;
 uint32_t data[8];
 //int16_t omega;
 int16_t torque;
+Que mean;
 
 // ロボマス用構造体宣言
 RobomasterTypedef Robomaster[4];
@@ -94,9 +100,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 				data[i] = RxData[i];
 			}
 
-			Robomaster[id - 1].AngularVelocity = data[2] << 8 | data[3];
-
 			Robomaster_RxCAN(&Robomaster[id - 1], &RxData[0]);
+
+			//calc moving average
+			mean.data[mean.pointer] = data[2] << 8 | data[3];
+			mean.pointer = (mean.pointer==mean.size-1) ? 0u : mean.pointer+1;
+			for(uint8_t i=0u; i<mean.size; i++){
+				Robomaster[id - 1].AngularVelocity += mean.data[i];
+			}
+			Robomaster[id - 1].AngularVelocity /= (float)mean.size;
 
 			// 送信
 			if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
@@ -137,7 +149,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	mean.size = 0u;
+	mean.pointer = 0u;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
