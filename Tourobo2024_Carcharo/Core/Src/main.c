@@ -82,6 +82,7 @@ int16_t torque;
 // ロボマス用構造体宣言
 RobomasterTypedef Robomaster[4];
 
+
 // CAN受信コールバック関数
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	if (hcan == &hcan2) {
@@ -464,14 +465,17 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 
-	// ロボマス構造体初期化
+	// ゲイン設定
+	float32_t Kp = 5;
+	float32_t Ki = 0.00;
+	float32_t Kd = 1.00;
 	for (int i = 0; i < 4; i++) {
+		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
-		// ゲイン設定
-		Robomaster[i].PID.Kp = 20.00;
-		Robomaster[i].PID.Ki = 0.00;
-		Robomaster[i].PID.Kd = 0.00;
 		// PID Initialize
+		Robomaster[i].PID.Kp = Kp;
+		Robomaster[i].PID.Ki = Ki;
+		Robomaster[i].PID.Kd = Kd;
 		arm_pid_init_f32(&Robomaster[i].PID, 1);
 	}
 
@@ -536,6 +540,7 @@ void StartDefaultTask(void const * argument)
 				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].AngularVelocity;
 				// PID Controller
 				Robomaster[i].TargetTorque = (int16_t)arm_pid_f32(&Robomaster[i].PID, Robomaster[i].AngularVelocityError);
+//				Robomaster[i].TargetTorque = (int16_t)(Robomaster[i].AngularVelocityError * Robomaster[i].PID.Kp);
 			}
 		}
 	}
