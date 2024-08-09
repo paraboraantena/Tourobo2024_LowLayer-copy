@@ -22,9 +22,14 @@ typedef struct {
 	int16_t FeedbackTorque;
 	// Motor Temperature
 	uint8_t MotorTemperature;
+
 	// Update Check
 	uint32_t Event;
 
+	// Target Angular Velocity
+	float32_t TargetAngularVelocity;
+	// Angular Velocity Error
+	float32_t AngularVelocityError;
 	// PID instance
 	/*
 	 * C(z) = Kp + (1 - z^{-1}) * Kd + 1 / (1 - z^{-1}) * Ki
