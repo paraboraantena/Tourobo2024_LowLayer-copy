@@ -72,14 +72,14 @@ void StartDefaultTask(void const * argument);
 #define F7_PORT 4001
 #define PC_PORT 4001
 
-// ????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?ã‚¹ãƒˆç”¨
+// ????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ã‚¹ãƒˆç”¨
 uint32_t id;
 uint32_t dlc;
 uint32_t data[8];
 //int16_t omega;
 int16_t torque;
 
-// ãƒ­ãƒœã?ã‚¹ç”¨æ§‹é??ä½“å®£è¨?
+// ãƒ­ãƒœï¿½?ï¿½ã‚¹ç”¨æ§‹ï¿½??ä½“å®£ï¿½?
 RobomasterTypedef Robomaster[4];
 
 // CANå—ä¿¡ã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯é–¢æ•°
@@ -94,35 +94,35 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 				data[i] = RxData[i];
 			}
 
-			Robomaster[id - 1].AngularVelocity = data[2] << 8 | data[3];
-
-			Robomaster_RxCAN(&Robomaster[id - 1], &RxData[0]);
-
-			// é€ä¿¡
-			if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-				// é€ä¿¡ç”¨æ§‹ï¿½??ä½“ï¿½?????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½å®šç¾©
-				CAN_TxHeaderTypeDef TxHeader;
-				// IDã®è¨­????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?
-				TxHeader.StdId = 0x200;
-				// æ¨™æº–IDã‚’ä½¿ç”¨
-				TxHeader.IDE = CAN_ID_STD;
-				// ????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?ãƒ¼ã‚¿ãƒ•ãƒ¬ãƒ¼????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½? or ãƒªãƒ¢ãƒ¼ãƒˆãƒ•ãƒ¬ãƒ¼????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?
-				TxHeader.RTR = CAN_RTR_DATA;
-				// ????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?ãƒ¼ã‚¿é•·????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½? [byte]
-				TxHeader.DLC = 8;
-				// ã‚¿ã‚¤????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?ã‚¹ã‚¿ãƒ³????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?
-				TxHeader.TransmitGlobalTime = DISABLE;
-				// 8byteã®é€ä¿¡????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?ãƒ¼ã‚¿
-				uint8_t TxData[8] = { 0 };
-				for (int i = 0; i < 4; i++) {
-					TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
-					TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
-				}
-				// é€ä¿¡ã«ä½¿ã£ãŸTxMailboxãŒï¿½?????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½ç´ã•ã‚Œã‚‹
-				uint32_t TxMailbox;
-				// ãƒ¡????¿½?¿½??¿½?¿½???¿½?¿½??¿½?¿½?ã‚»ãƒ¼ã‚¸é€ä¿¡
-				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
-			}
+//			Robomaster[id - 1].AngularVelocity = data[2] << 8 | data[3];
+//
+//			Robomaster_RxCAN(&Robomaster[id - 1], &RxData[0]);
+//
+//			// é€ä¿¡
+//			if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
+//				// é€ä¿¡ç”¨æ§‹ï¿½??ä½“ï¿½?????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½å®šç¾©
+//				CAN_TxHeaderTypeDef TxHeader;
+//				// IDã®è¨­????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?
+//				TxHeader.StdId = 0x200;
+//				// æ¨™æº–IDã‚’ä½¿ç”¨
+//				TxHeader.IDE = CAN_ID_STD;
+//				// ????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿ãƒ•ãƒ¬ãƒ¼????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½? or ãƒªãƒ¢ãƒ¼ãƒˆãƒ•ãƒ¬ãƒ¼????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?
+//				TxHeader.RTR = CAN_RTR_DATA;
+//				// ????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿é•·????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½? [byte]
+//				TxHeader.DLC = 8;
+//				// ã‚¿ã‚¤????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ã‚¹ã‚¿ãƒ³????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?
+//				TxHeader.TransmitGlobalTime = DISABLE;
+//				// 8byteã®é€ä¿¡????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿
+//				uint8_t TxData[8] = { 0 };
+//				for (int i = 0; i < 4; i++) {
+//					TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
+//					TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
+//				}
+//				// é€ä¿¡ã«ä½¿ã£ãŸTxMailboxãŒï¿½?????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½ç´ã•ã‚Œã‚‹
+//				uint32_t TxMailbox;
+//				// ãƒ¡????ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ã‚»ãƒ¼ã‚¸é€ä¿¡
+//				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
+//			}
 		}
 	}
 }
@@ -425,19 +425,21 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
 
-	// ãƒ•ã‚£ãƒ«ã‚¿ã®æ§‹é??ä½“å®£è¨?
+	// ãƒ•ã‚£ãƒ«ã‚¿ã®æ§‹ï¿½??ä½“å®£ï¿½?
 	CAN_FilterTypeDef filter;
-	// IDã¨Maskã®å¤‰æ•°å®£è¨?
+	// IDã¨Maskã®å¤‰æ•°å®£ï¿½?
 	uint32_t fid;
 	uint32_t fmask;
 
 	/* CAN2 FIFO0 (For Robomaster) */
 	// ID and Mask Register
-	fid = 0x200;
-	fmask = 0x7F0;
+//	fid = 0x200;
+//	fmask = 0x7F0;
+	fid = 0x000;
+	fmask = 0x000;
 	// CAN2ã®Filter Bankã¯14ã‹ã‚‰
 	filter.SlaveStartFilterBank = 14;
-	// Filter Bank 14ã«è¨­å®šé–‹å§?
+	// Filter Bank 14ã«è¨­å®šé–‹ï¿½?
 	filter.FilterBank = 14;
 	// For FIFO0
 	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
@@ -458,7 +460,7 @@ void StartDefaultTask(void const * argument)
 	fmask = 0x7F0;
 	// CAN2ã®Filter Bankã¯14ã‹ã‚‰
 	filter.SlaveStartFilterBank = 14;
-	// Filter Bank 15ã«è¨­å®šé–‹å§?
+	// Filter Bank 15ã«è¨­å®šé–‹ï¿½?
 	filter.FilterBank = 15;
 	// For FIFO1
 	filter.FilterFIFOAssignment = CAN_FILTER_FIFO1;
@@ -479,7 +481,7 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 
-	// ãƒ­ãƒœã?ã‚¹æ§‹é??ä½“å?æœŸåŒ?
+	// ãƒ­ãƒœï¿½?ï¿½ã‚¹æ§‹ï¿½??ä½“ï¿½?ï¿½æœŸï¿½?
 	for (int i = 0; i < 4; i++) {
 		Robomaster_InitZero(&Robomaster[i]);
 	}
@@ -489,28 +491,28 @@ void StartDefaultTask(void const * argument)
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[20] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 			17, 18, 19, 20 };
-	//ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å®£??¿½?¿½?
+	//ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å®£??ï¿½ï¿½?ï¿½ï¿½?
 	struct sockaddr_in rxAddr, txAddr;
-	//ã‚½ã‚±??¿½?¿½?ãƒˆã‚’ä½œï¿½??
+	//ã‚½ã‚±??ï¿½ï¿½?ï¿½ï¿½?ãƒˆã‚’ä½œï¿½??
 	int socket = lwip_socket(AF_INET, SOCK_DGRAM, 0);
-	//ã‚¢ãƒ‰ãƒ¬ã‚¹ã®ãƒ¡ãƒ¢ãƒªã‚’ç¢º??¿½?¿½?
+	//ã‚¢ãƒ‰ãƒ¬ã‚¹ã®ãƒ¡ãƒ¢ãƒªã‚’ç¢º??ï¿½ï¿½?ï¿½ï¿½?
 	memset((char*) &txAddr, 0, sizeof(txAddr));
 	memset((char*) &rxAddr, 0, sizeof(rxAddr));
-	//ã‚¢ãƒ‰ãƒ¬ã‚¹ã®æ§‹ï¿½??ä½“ï¿½???¿½?¿½??¿½?¿½?ãƒ¼ã‚¿ã‚’å®šç¾©
-	rxAddr.sin_family = AF_INET; //ãƒ—ãƒ­ãƒˆã‚³ãƒ«ãƒ•ã‚¡ãƒŸãƒªã®è¨­??¿½?¿½?(IPv4ã«è¨­??¿½?¿½?)
-	rxAddr.sin_len = sizeof(rxAddr); //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®??¿½?¿½?ãƒ¼ã‚¿ã‚µã‚¤ã‚º
-	rxAddr.sin_addr.s_addr = INADDR_ANY; //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®è¨­??¿½?¿½?(ä»Šå›ã¯ã™ã¹ã¦ã®ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å—ã‘ï¿½???¿½?¿½ã‚Œã‚‹ãŸã‚INADDR_ANY)
-	rxAddr.sin_port = lwip_htons(PC_PORT); //ãƒï¿½???¿½?¿½ãƒˆï¿½???¿½?¿½??¿½?¿½???¿½?¿½?
-	txAddr.sin_family = AF_INET; //ãƒ—ãƒ­ãƒˆã‚³ãƒ«ãƒ•ã‚¡ãƒŸãƒªã®??¿½?¿½???¿½?¿½?(IPv4ã«è¨­??¿½?¿½?)
-	txAddr.sin_len = sizeof(txAddr); //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®??¿½?¿½?ãƒ¼ã‚¿ã®ã‚µã‚¤ã‚º
-	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®è¨­??¿½?¿½?
-	txAddr.sin_port = lwip_htons(PC_PORT); //ãƒï¿½???¿½?¿½ãƒˆï¿½???¿½?¿½??¿½?¿½???¿½?¿½?
-	// whileã§bindã‚’ï¿½?ã£ã¦ã¿ã‚‹ã¨?¿½?ã¾ãè¡Œãå¯èƒ½æ€§?¿½?
-//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPã‚¢ãƒ‰ãƒ¬ã‚¹ã¨ã‚½ã‚±??¿½?¿½?ãƒˆã‚’ç´ä»˜ã‘ã¦å—ä¿¡ã‚’ã§ãã‚‹çŠ¶æ…‹ã«
+	//ã‚¢ãƒ‰ãƒ¬ã‚¹ã®æ§‹ï¿½??ä½“ï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿ã‚’å®šç¾©
+	rxAddr.sin_family = AF_INET; //ãƒ—ãƒ­ãƒˆã‚³ãƒ«ãƒ•ã‚¡ãƒŸãƒªã®è¨­??ï¿½ï¿½?ï¿½ï¿½?(IPv4ã«è¨­??ï¿½ï¿½?ï¿½ï¿½?)
+	rxAddr.sin_len = sizeof(rxAddr); //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿ã‚µã‚¤ã‚º
+	rxAddr.sin_addr.s_addr = INADDR_ANY; //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®è¨­??ï¿½ï¿½?ï¿½ï¿½?(ä»Šå›ã¯ã™ã¹ã¦ã®ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å—ã‘ï¿½???ï¿½ï¿½?ï¿½ï¿½ã‚Œã‚‹ãŸã‚INADDR_ANY)
+	rxAddr.sin_port = lwip_htons(PC_PORT); //ãƒï¿½???ï¿½ï¿½?ï¿½ï¿½ãƒˆï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½?
+	txAddr.sin_family = AF_INET; //ãƒ—ãƒ­ãƒˆã‚³ãƒ«ãƒ•ã‚¡ãƒŸãƒªã®??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½?(IPv4ã«è¨­??ï¿½ï¿½?ï¿½ï¿½?)
+	txAddr.sin_len = sizeof(txAddr); //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿ã®ã‚µã‚¤ã‚º
+	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //ã‚¢ãƒ‰ãƒ¬ã‚¹ã®è¨­??ï¿½ï¿½?ï¿½ï¿½?
+	txAddr.sin_port = lwip_htons(PC_PORT); //ãƒï¿½???ï¿½ï¿½?ï¿½ï¿½ãƒˆï¿½???ï¿½ï¿½?ï¿½ï¿½??ï¿½ï¿½?ï¿½ï¿½???ï¿½ï¿½?ï¿½ï¿½?
+	// whileã§bindã‚’ï¿½?ã£ã¦ã¿ã‚‹ã¨?ï¿½ï¿½?ã¾ãè¡Œãå¯èƒ½æ€§?ï¿½ï¿½?
+//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPã‚¢ãƒ‰ãƒ¬ã‚¹ã¨ã‚½ã‚±??ï¿½ï¿½?ï¿½ï¿½?ãƒˆã‚’ç´ä»˜ã‘ã¦å—ä¿¡ã‚’ã§ãã‚‹çŠ¶æ…‹ã«
 	while(lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)) < 0) {
 
 	}
-	socklen_t n; //å—ä¿¡ã—ãŸ??¿½?¿½?ãƒ¼ã‚¿ã®ã‚µã‚¤ã‚º
+	socklen_t n; //å—ä¿¡ã—ãŸ??ï¿½ï¿½?ï¿½ï¿½?ãƒ¼ã‚¿ã®ã‚µã‚¤ã‚º
 	socklen_t len = sizeof(rxAddr); //rxAddrã®ã‚µã‚¤ã‚º
 
 	// Variable For PID
@@ -525,9 +527,9 @@ void StartDefaultTask(void const * argument)
 	/* Infinite loop */
 	for (;;) {
 		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0,
-				(struct sockaddr*) &txAddr, sizeof(txAddr)); //å—ä¿¡ã—ãŸã‚‰ï¿½???¿½?¿½ä¿¡ã™ã‚‹
+				(struct sockaddr*) &txAddr, sizeof(txAddr)); //å—ä¿¡ã—ãŸã‚‰ï¿½???ï¿½ï¿½?ï¿½ï¿½ä¿¡ã™ã‚‹
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
-				(struct sockaddr*) &rxAddr, &len); //å—ä¿¡å‡¦??¿½?¿½?(blocking)
+				(struct sockaddr*) &rxAddr, &len); //å—ä¿¡å‡¦??ï¿½ï¿½?ï¿½ï¿½?(blocking)
 
 //		int16_t test = Robomaster[0].Angle;z
 		//ãƒ¢ãƒ¼ã‚¿ãƒ¼ã®é€Ÿåº¦åˆ¶å¾¡
