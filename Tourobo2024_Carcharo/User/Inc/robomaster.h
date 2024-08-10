@@ -26,6 +26,9 @@ typedef struct {
 	// Update Check
 	uint32_t Event;
 
+	// Encoder FeedBack
+	float32_t EncoderAngularVelocity;
+
 	// Target Angular Velocity
 	float32_t TargetAngularVelocity;
 	float32_t PreTargetAngularVelocity;
