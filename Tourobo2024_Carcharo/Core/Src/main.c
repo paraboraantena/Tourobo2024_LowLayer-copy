@@ -139,6 +139,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	}
 }
 
+// 現時点では割り込みが入らない
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   if(hcan == &hcan2) {
@@ -442,8 +443,8 @@ void StartDefaultTask(void const * argument)
 
 	/* CAN2 FIFO0 (For Robomaster) */
 	// ID and Mask Register
-	fid = 0x000;
-	fmask = 0x000;
+	fid = 0x200;
+	fmask = 0x7F0;
 	// CAN2のFilter Bankは14から
 	filter.SlaveStartFilterBank = 14;
 	// Filter Bank 14に設定開�?
@@ -461,7 +462,7 @@ void StartDefaultTask(void const * argument)
 	// Filter適用
 	HAL_CAN_ConfigFilter(&hcan2, &filter);
 
-	/* CAN2 FIFO1 (For Encoder) */
+	/* CAN2 FIFO0 (For Encoder) */
 	// ID and Mask Register
 	fid = 0x400;
 	fmask = 0x7F0;
@@ -470,7 +471,7 @@ void StartDefaultTask(void const * argument)
 	// Filter Bank 15に設定開�?
 	filter.FilterBank = 15;
 	// For FIFO1
-	filter.FilterFIFOAssignment = CAN_FILTER_FIFO1;
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
 	filter.FilterActivation = CAN_FILTER_ENABLE;
 	filter.FilterMode = CAN_FILTERMODE_IDMASK;
 	filter.FilterScale = CAN_FILTERSCALE_32BIT;
