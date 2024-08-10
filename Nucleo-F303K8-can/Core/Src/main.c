@@ -1,7 +1,7 @@
 /* USER CODE BEGIN Header */
 
-/**f3同士でCAN通信?��?ってみた�??��受信割込みとフィルターの?��?解が目?��?です�??
- * 受信データをprintfするようにした 2024/08/08
+/**f3同士でCAN通信??��?��?ってみた�???��?��受信割込みとフィルターの??��?��?解が目??��?��?です�??
+ * 受信�?ータをprintfするようにした 2024/08/08
 
   ******************************************************************************
   * @file           : main.c
@@ -123,8 +123,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   TxHeader.StdId = 0x555;
   TxHeader.RTR = CAN_RTR_DATA;
-  TxHeader.IDE = CAN_ID_STD;//標準ID(11ビッ??��?��?).
-  TxHeader.DLC = 8;//??��?��?ータ長.
+  TxHeader.IDE = CAN_ID_STD;//標準ID(11ビッ???��?��??��?��?).
+  TxHeader.DLC = 8;//???��?��??��?��?ータ長.
   TxHeader.TransmitGlobalTime = DISABLE;//?
 
 
@@ -226,8 +226,8 @@ static void MX_CAN_Init(void)
   hcan.Init.Prescaler = 3;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_15TQ;
-  hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_7TQ;
+  hcan.Init.TimeSeg2 = CAN_BS2_2TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
   hcan.Init.AutoWakeUp = DISABLE;
