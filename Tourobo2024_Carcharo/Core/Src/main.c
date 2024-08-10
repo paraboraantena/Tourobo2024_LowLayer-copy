@@ -543,9 +543,10 @@ void StartDefaultTask(void const * argument)
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
 				(struct sockaddr*) &rxAddr, &len); //受信処??��?��?(blocking)
 
+		// UDPから受け取った足回りデータ
 		for(int i = 0; i < 4; i++) {
-			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] * 19 / 100;
-			txbuf[i] = Robomaster[i].AngularVelocity * 100;
+			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] * 19 / (-100);
+			txbuf[i] = Robomaster[i].AngularVelocity * (-100);
 		}
 
 //		shoki = buff[8];
