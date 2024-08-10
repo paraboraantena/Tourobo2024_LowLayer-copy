@@ -76,7 +76,7 @@ void StartDefaultTask(void const * argument);
 #define F7_PORT 4001
 #define PC_PORT 4001
 
-// ???��?��??��?��?スト用
+// ????��?��??��?��???��?��??��?��?スト用
 uint32_t id;
 uint32_t dlc;
 uint32_t data[8];
@@ -84,7 +84,7 @@ uint32_t data[8];
 int16_t torque;
 Que mean[4];
 
-// ロボマス用構造体宣言
+// ロボ�?�ス用構�??体宣�?
 RobomasterTypedef Robomaster[4];
 
 // CAN受信コールバック関数
@@ -112,31 +112,38 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
 			// 送信
 			if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-				// 送信用構�??体�????��?��??��?��定義
+				// 送信用構�??体�?????��?��??��?��???��?��??��?��定義
 				CAN_TxHeaderTypeDef TxHeader;
-				// IDの設???��?��??��?��?
+				// IDの設????��?��??��?��???��?��??��?��?
 				TxHeader.StdId = 0x200;
 				// 標準IDを使用
 				TxHeader.IDE = CAN_ID_STD;
-				// ???��?��??��?��?ータフレー???��?��??��?��? or リモートフレー???��?��??��?��?
+				// ????��?��??��?��???��?��??��?��?ータフレー????��?��??��?��???��?��??��?��? or リモートフレー????��?��??��?��???��?��??��?��?
 				TxHeader.RTR = CAN_RTR_DATA;
-				// ???��?��??��?��?ータ長???��?��??��?��? [byte]
+				// ????��?��??��?��???��?��??��?��?ータ長????��?��??��?��???��?��??��?��? [byte]
 				TxHeader.DLC = 8;
-				// タイ???��?��??��?��?スタン???��?��??��?��?
+				// タイ????��?��??��?��???��?��??��?��?スタン????��?��??��?��???��?��??��?��?
 				TxHeader.TransmitGlobalTime = DISABLE;
-				// 8byteの送信???��?��??��?��?ータ
+				// 8byteの送信????��?��??��?��???��?��??��?��?ータ
 				uint8_t TxData[8] = { 0 };
 				for (int i = 0; i < 4; i++) {
 					TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
 					TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
 				}
-				// 送信に使ったTxMailboxが�????��?��??��?��納される
+				// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
 				uint32_t TxMailbox;
-				// メ???��?��??��?��?セージ送信
+				// メ????��?��??��?��???��?��??��?��?セージ送信
 				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
 			}
 		}
 	}
+}
+
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan2) {
+
+  }
 }
 
 /* USER CODE END 0 */
@@ -148,11 +155,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 int main(void)
 {
 
-  /* USER CODE BEGIN 1 */
-	for(uint8_t i=0u;i<4;i++){
-		mean[i].size = 20;
-		mean[i].pointer = 0u;
-	}
+  /* USER CODE BEGIN 1 *
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -421,13 +425,18 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
-	/* init code for LWIP */
-	  MX_LWIP_Init();
-	  /* USER CODE BEGIN 5 */
+  /* init code for LWIP */
+  MX_LWIP_Init();
+  /* USER CODE BEGIN 5 */
+  // 移動平均フィルタ初期化
+	for(uint8_t i=0u;i<4;i++){
+		mean[i].size = 8;
+		mean[i].pointer = 0u;
+	}
 
-	// フィルタの構造体宣言
+	// フィルタの構�??体宣�?
 	CAN_FilterTypeDef filter;
-	// IDとMaskの変数宣言
+	// IDとMaskの変数宣�?
 	uint32_t fid;
 	uint32_t fmask;
 
@@ -437,7 +446,7 @@ void StartDefaultTask(void const * argument)
 	fmask = 0x7F0;
 	// CAN2のFilter Bankは14から
 	filter.SlaveStartFilterBank = 14;
-	// Filter Bank 14に設定開始
+	// Filter Bank 14に設定開�?
 	filter.FilterBank = 14;
 	// For FIFO0
 	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
@@ -458,7 +467,7 @@ void StartDefaultTask(void const * argument)
 	fmask = 0x7F0;
 	// CAN2のFilter Bankは14から
 	filter.SlaveStartFilterBank = 14;
-	// Filter Bank 15に設定開始
+	// Filter Bank 15に設定開�?
 	filter.FilterBank = 15;
 	// For FIFO1
 	filter.FilterFIFOAssignment = CAN_FILTER_FIFO1;
@@ -479,7 +488,7 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 
-	// ゲイン設定
+	// ゲイン設�?
 	float32_t Kp = 2;
 	float32_t Ki = 0.05;
 	float32_t Kd = 0.000;
@@ -499,40 +508,40 @@ void StartDefaultTask(void const * argument)
 	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[16] = { 0 };
-	//アドレスを宣?��?
+	//アドレスを宣??��?��?
 	struct sockaddr_in rxAddr, txAddr;
-	//ソケ?��?トを作�??
+	//ソケ??��?��?トを作�??
 	int socket = lwip_socket(AF_INET, SOCK_DGRAM, 0);
-	//アドレスのメモリを確?��?
+	//アドレスのメモリを確??��?��?
 	memset((char*) &txAddr, 0, sizeof(txAddr));
 	memset((char*) &rxAddr, 0, sizeof(rxAddr));
-	//アドレスの構�??体�??��?��?ータを定義
-	rxAddr.sin_family = AF_INET; //プロトコルファミリの設?��?(IPv4に設?��?)
-	rxAddr.sin_len = sizeof(rxAddr); //アドレスの?��?ータサイズ
-	rxAddr.sin_addr.s_addr = INADDR_ANY; //アドレスの設?��?(今回はすべてのアドレスを受け�??��れるためINADDR_ANY)
-	rxAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
-	txAddr.sin_family = AF_INET; //プロトコルファミリの?��??��?(IPv4に設?��?)
-	txAddr.sin_len = sizeof(txAddr); //アドレスの?��?ータのサイズ
-	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //アドレスの設?��?
-	txAddr.sin_port = lwip_htons(PC_PORT); //ポ�??��ト�??��?��??��?
-	// whileでbindを�?ってみると�?まく行く可能性�?
-//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPアドレスとソケ?��?トを紐付けて受信をできる状態に
+	//アドレスの構�??体�???��?��??��?��?ータを定義
+	rxAddr.sin_family = AF_INET; //プロトコルファミリの設??��?��?(IPv4に設??��?��?)
+	rxAddr.sin_len = sizeof(rxAddr); //アドレスの??��?��?ータサイズ
+	rxAddr.sin_addr.s_addr = INADDR_ANY; //アドレスの設??��?��?(今回はすべてのアドレスを受け�???��?��れるためINADDR_ANY)
+	rxAddr.sin_port = lwip_htons(PC_PORT); //ポ�???��?��ト�???��?��??��?��???��?��?
+	txAddr.sin_family = AF_INET; //プロトコルファミリの??��?��???��?��?(IPv4に設??��?��?)
+	txAddr.sin_len = sizeof(txAddr); //アドレスの??��?��?ータのサイズ
+	txAddr.sin_addr.s_addr = inet_addr(PC_ADDR); //アドレスの設??��?��?
+	txAddr.sin_port = lwip_htons(PC_PORT); //ポ�???��?��ト�???��?��??��?��???��?��?
+	// whileでbindを�?ってみると?��?まく行く可能性?��?
+//	(void) lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)); //IPアドレスとソケ??��?��?トを紐付けて受信をできる状態に
 	while(lwip_bind(socket, (struct sockaddr*) &rxAddr, sizeof(rxAddr)) < 0) {
 
 	}
-	socklen_t n; //受信した?��?ータのサイズ
+	socklen_t n; //受信した??��?��?ータのサイズ
 	socklen_t len = sizeof(rxAddr); //rxAddrのサイズ
 
 
-	// ARP待ち
+	// ARP�?ち
 //	HAL_Delay(700);
 
 	/* Infinite loop */
 	for (;;) {
 		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0,
-				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�??��信する
+				(struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�???��?��信する
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL,
-				(struct sockaddr*) &rxAddr, &len); //受信処?��?(blocking)
+				(struct sockaddr*) &rxAddr, &len); //受信処??��?��?(blocking)
 
 		for(int i = 0; i < 4; i++) {
 			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] * 19 / 100;
@@ -549,7 +558,7 @@ void StartDefaultTask(void const * argument)
 		// モーターの速度制御
 		for (int i = 0; i < 4; i++) {
 			if (Robomaster[i].Event == 1) {
-				// 誤差e[n]の計算
+				// 誤差e[n]の計�?
 				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].AngularVelocity;
 				// PID Controller
 //				Robomaster[i].PID.state[2] = 0.0f;
