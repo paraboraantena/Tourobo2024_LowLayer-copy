@@ -58,34 +58,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := Tourobo2024_MD_formica_expander_xxxx
+BUILD_ARTIFACT_NAME := shoki_CAN_MD
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-Tourobo2024_MD_formica_expander_xxxx.elf \
+shoki_CAN_MD.elf \
 
 MAP_FILES += \
-Tourobo2024_MD_formica_expander_xxxx.map \
+shoki_CAN_MD.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-Tourobo2024_MD_formica_expander_xxxx.list \
+shoki_CAN_MD.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: Tourobo2024_MD_formica_expander_xxxx.elf secondary-outputs
+main-build: shoki_CAN_MD.elf secondary-outputs
 
 # Tool invocations
-Tourobo2024_MD_formica_expander_xxxx.elf Tourobo2024_MD_formica_expander_xxxx.map: $(OBJS) $(USER_OBJS) C:\Users\harut\OneDrive\ -\ OUMail\ (Osaka\ University)\Robohan\Tourobo2024_LowLayer\Tourobo2024_MD_formica_expander_xxxx\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "Tourobo2024_MD_formica_expander_xxxx.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\harut\OneDrive - OUMail (Osaka University)\Robohan\Tourobo2024_LowLayer\Tourobo2024_MD_formica_expander_xxxx\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Tourobo2024_MD_formica_expander_xxxx.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+shoki_CAN_MD.elf shoki_CAN_MD.map: $(OBJS) $(USER_OBJS) C:\Users\ohori\Creating\code\CUBEIDE\Tourobo_Lowlayer_github\Tourobo2024_LowLayer\shoki_CAN_MD\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "shoki_CAN_MD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ohori\Creating\code\CUBEIDE\Tourobo_Lowlayer_github\Tourobo2024_LowLayer\shoki_CAN_MD\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="shoki_CAN_MD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -94,14 +94,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-Tourobo2024_MD_formica_expander_xxxx.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "Tourobo2024_MD_formica_expander_xxxx.list"
+shoki_CAN_MD.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "shoki_CAN_MD.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) Tourobo2024_MD_formica_expander_xxxx.elf Tourobo2024_MD_formica_expander_xxxx.list Tourobo2024_MD_formica_expander_xxxx.map default.size.stdout
+	-$(RM) default.size.stdout shoki_CAN_MD.elf shoki_CAN_MD.list shoki_CAN_MD.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
