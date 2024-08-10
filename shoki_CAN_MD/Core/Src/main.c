@@ -151,13 +151,13 @@ int main(void)
 	uint32_t TxMailbox;
 	uint8_t TxData[8];
 
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);//PWM1_R
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);//PWM2_R
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);//PWM3_R
 
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);//PWM1_L
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);//PWM2_L
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);//PWM3_L
 	for (;;) {
 
 		if (0 < HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
@@ -176,9 +176,9 @@ int main(void)
 			TxData[7] = 0x22;
 			HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox);
 		}
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,20000);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4,300);
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3,20000);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,20000);//PWM1_R 20000/65535
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4,300);//PWM2_R   300/1000=0.3
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3,20000);//PWM3_R 20000/65535
 
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3,0);
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3,0);
