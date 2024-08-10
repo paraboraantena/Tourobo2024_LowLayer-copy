@@ -442,8 +442,8 @@ void StartDefaultTask(void const * argument)
 
 	/* CAN2 FIFO0 (For Robomaster) */
 	// ID and Mask Register
-	fid = 0x200;
-	fmask = 0x7F0;
+	fid = 0x000;
+	fmask = 0x000;
 	// CAN2のFilter Bankは14から
 	filter.SlaveStartFilterBank = 14;
 	// Filter Bank 14に設定開�?
