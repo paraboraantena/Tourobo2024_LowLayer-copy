@@ -32,7 +32,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef struct Que{
-	float data[16];
+	int16_t data[32];
 	uint8_t pointer;
 	uint8_t size;
 }Que;
@@ -82,7 +82,7 @@ uint32_t dlc;
 uint32_t data[8];
 //int16_t omega;
 int16_t torque;
-Que mean;
+Que mean[4];
 
 // ロボマス用構造体宣言
 RobomasterTypedef Robomaster[4];
@@ -102,12 +102,13 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 			Robomaster_RxCAN(&Robomaster[id - 1], &RxData[0]);
 
 			//calc moving average
-			mean.data[mean.pointer] = data[2] << 8 | data[3];
-			mean.pointer = (mean.pointer==mean.size-1) ? 0u : mean.pointer+1;
-			for(uint8_t i=0u; i<mean.size; i++){
-				Robomaster[id - 1].AngularVelocity += mean.data[i];
+			mean[id-1].data[mean[id-1].pointer] = (data[2] << 8 | data[3]);
+			mean[id-1].pointer = (mean[id-1].pointer==mean[id-1].size-1) ? 0u : mean[id-1].pointer+1;
+			Robomaster[id-1].AngularVelocity = 0;
+			for(uint8_t i=0u; i<mean[id-1].size; i++){
+				Robomaster[id - 1].AngularVelocity += mean[id-1].data[i] / mean[id-1].size;
 			}
-			Robomaster[id - 1].AngularVelocity /= (float)mean.size;
+			Robomaster[id - 1].AngularVelocity += mean[id-1].size/2;
 
 			// 送信
 			if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
@@ -148,8 +149,10 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	mean.size = 10;
-	mean.pointer = 0u;
+	for(uint8_t i=0u;i<4;i++){
+		mean[i].size = 20;
+		mean[i].pointer = 0u;
+	}
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -477,11 +480,11 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 
 	// ゲイン設定
-	float32_t Kp = 10;
-	float32_t Ki = 0.00;
-	float32_t Kd = 0.00;
-	float32_t f_i = 50.0f;	//for feedforwared
-	float32_t f_j = 5.0f;	//for feedforwared
+	float32_t Kp = 2;
+	float32_t Ki = 0.05;
+	float32_t Kd = 0.000;
+	float32_t f_i = 0.5f;	//for feedforwared
+	float32_t f_j = 0.1f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
