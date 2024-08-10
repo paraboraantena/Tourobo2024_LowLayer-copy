@@ -22,7 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "math.h"
-#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -101,21 +100,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			// deg/s to rpm
 			rpm_float[i] = deg_per_second[i] * 60 / 360;
 			rpm[i] = (int16_t)rpm_float[i];
-			if(0<HAL_CAN_GetTxMailboxesFreeLevel(&hcan2))
-			{
-				CAN_TxHeaderTypeDef TxHeader;
-				TxHeader.StdId = 0x400 + 1 + i;
-				TxHeader.IDE = CAN_ID_STD;
-				TxHeader.DLC = sizeof(float);
-				TxHeader.RTR = CAN_RTR_DATA;
-				TxHeader.TransmitGlobalTime = DISABLE;
-
-				uint32_t TxMailBox;
-				uint8_t TxData[sizeof(float)];
-				memcpy(&TxData[0], &rpm_float[i], sizeof(float));
-				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData[0], &TxMailBox);
-			}
-
 		}
 	}
 }
@@ -165,7 +149,6 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim5);
-  HAL_CAN_Start(&hcan2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -242,7 +225,7 @@ static void MX_CAN2_Init(void)
 
   /* USER CODE END CAN2_Init 1 */
   hcan2.Instance = CAN2;
-  hcan2.Init.Prescaler = 3;
+  hcan2.Init.Prescaler = 30;
   hcan2.Init.Mode = CAN_MODE_NORMAL;
   hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan2.Init.TimeSeg1 = CAN_BS1_12TQ;
