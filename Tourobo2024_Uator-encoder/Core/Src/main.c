@@ -125,24 +125,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			rpm_float[i] = deg_per_second[i] * 60 / 360;
 			rpm[i] = (int16_t)rpm_float[i];
 
-			rpm_buf[i][1] = rpm_buf[i][0];
-			rpm_buf[i][0] = rpm_float[i];
-			angle_integral[i] += (rpm_buf[i][0] + rpm_buf[i][1]) * 360 / 60 * dt / 2;
-
-			if(0 < HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-				CAN_TxHeaderTypeDef TxHeader;
-				TxHeader.IDE = CAN_ID_STD;
-				TxHeader.RTR = CAN_RTR_DATA;
-				TxHeader.TransmitGlobalTime = DISABLE;
-				TxHeader.StdId = 0x400 + i + 1;
-				TxHeader.DLC = sizeof(float);
-
-				uint8_t TxData[sizeof(float)];
-				memcpy(&TxData[0], &rpm_float[i], sizeof(float));
-				CAN_TxMailBox_TypeDef TxMailBox;
-				HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData[0], &TxMailBox);
-			}
+//			rpm_buf[i][1] = rpm_buf[i][0];
+//			rpm_buf[i][0] = rpm_float[i];
+//			angle_integral[i] += (rpm_buf[i][0] + rpm_buf[i][1]) * 360 / 60 * dt / 2;
 		}
+
+		// CAN Transmit
+		CAN_TxHeaderTypeDef TxHeader;
+		TxHeader.IDE = CAN_ID_STD;
+		TxHeader.RTR = CAN_RTR_DATA;
+		TxHeader.TransmitGlobalTime = DISABLE;
+		TxHeader.StdId = 0x400;
+		TxHeader.DLC = 8;
+
+		uint8_t TxData[8];
+		memcpy(TxData, rpm, 8);
+		CAN_TxMailBox_TypeDef TxMailBox;
+		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
 	}
 }
 /* USER CODE END PFP */
