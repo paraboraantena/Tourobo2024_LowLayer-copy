@@ -131,20 +131,22 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 		// CAN Transmit
-		CAN_TxHeaderTypeDef TxHeader;
-		TxHeader.IDE = CAN_ID_STD;
-		TxHeader.RTR = CAN_RTR_DATA;
-		TxHeader.TransmitGlobalTime = DISABLE;
-		TxHeader.StdId = 0x080;
-		TxHeader.DLC = 8;
+		if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
+			CAN_TxHeaderTypeDef TxHeader;
+			TxHeader.IDE = CAN_ID_STD;
+			TxHeader.RTR = CAN_RTR_DATA;
+			TxHeader.TransmitGlobalTime = DISABLE;
+			TxHeader.StdId = 0x080;
+			TxHeader.DLC = 8;
 
-		uint8_t TxData[8];
-		for(int i = 0; i < 4; i++) {
-				rpm[i] *= 100;
+			uint8_t TxData[8];
+			for(int i = 0; i < 4; i++) {
+					rpm[i] *= 100;
+			}
+			memcpy(TxData, rpm, 8);
+			CAN_TxMailBox_TypeDef TxMailBox;
+			HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
 		}
-		memcpy(TxData, rpm, 8);
-		CAN_TxMailBox_TypeDef TxMailBox;
-		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
 	}
 }
 /* USER CODE END PFP */
