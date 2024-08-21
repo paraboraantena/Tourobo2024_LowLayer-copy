@@ -57,18 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Enc2A_Pin GPIO_PIN_0
-#define Enc2A_GPIO_Port GPIOC
-#define Enc2B_Pin GPIO_PIN_1
-#define Enc2B_GPIO_Port GPIOC
-#define Enc3A_Pin GPIO_PIN_2
-#define Enc3A_GPIO_Port GPIOC
-#define Enc3B_Pin GPIO_PIN_3
-#define Enc3B_GPIO_Port GPIOC
-#define Enc4A_Pin GPIO_PIN_6
-#define Enc4A_GPIO_Port GPIOA
-#define Enc4B_Pin GPIO_PIN_7
-#define Enc4B_GPIO_Port GPIOA
+#define ENC2A_Pin GPIO_PIN_0
+#define ENC2A_GPIO_Port GPIOC
+#define ENC2B_Pin GPIO_PIN_1
+#define ENC2B_GPIO_Port GPIOC
+#define ENC3A_Pin GPIO_PIN_2
+#define ENC3A_GPIO_Port GPIOC
+#define ENC3B_Pin GPIO_PIN_3
+#define ENC3B_GPIO_Port GPIOC
+#define ENC4A_Pin GPIO_PIN_6
+#define ENC4A_GPIO_Port GPIOA
+#define ENC4B_Pin GPIO_PIN_7
+#define ENC4B_GPIO_Port GPIOA
 #define SOLV6_Pin GPIO_PIN_14
 #define SOLV6_GPIO_Port GPIOB
 #define SOLV5_Pin GPIO_PIN_15
@@ -81,10 +81,10 @@ void Error_Handler(void);
 #define SOLV2_GPIO_Port GPIOA
 #define SOLV1_Pin GPIO_PIN_12
 #define SOLV1_GPIO_Port GPIOA
-#define Enc1A_Pin GPIO_PIN_4
-#define Enc1A_GPIO_Port GPIOB
-#define Enc1B_Pin GPIO_PIN_5
-#define Enc1B_GPIO_Port GPIOB
+#define ENC1A_Pin GPIO_PIN_4
+#define ENC1A_GPIO_Port GPIOB
+#define ENC1B_Pin GPIO_PIN_5
+#define ENC1B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
