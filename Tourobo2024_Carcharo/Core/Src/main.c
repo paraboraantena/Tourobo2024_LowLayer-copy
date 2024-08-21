@@ -559,7 +559,7 @@ void StartDefaultTask(void const * argument)
 		for (int i = 0; i < 4; i++) {
 			if (Robomaster[i].Event == 1) {
 				// 誤差e[n]の計�?
-				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity;
+				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].AngularVelocity;
 				// PID Controller
 //				Robomaster[i].PID.state[2] = 0.0f;
 				Robomaster[i].TargetTorque = (int16_t)arm_pid_f32(&Robomaster[i].PID, Robomaster[i].AngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
