@@ -1,1 +1,6 @@
-*/.project*
+*/.settings
+*/.mxproject
+*/Debug
+*/Release
+*.launch
+*/.project

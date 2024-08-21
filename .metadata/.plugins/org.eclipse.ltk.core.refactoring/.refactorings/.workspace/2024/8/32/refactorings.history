@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Delete resource &apos;Tourobo2024_Carcharo&apos;" deleteContents="false" description="Delete resource &apos;Tourobo2024_Carcharo&apos;" element1="/Tourobo2024_Carcharo" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1723170771463"/>&#x0A;<refactoring comment="Delete resource &apos;Tourobo2024_MD_formica_Actz_Encoder&apos;" deleteContents="false" description="Delete resource &apos;Tourobo2024_MD_formica_Actz_Encoder&apos;" element1="/Tourobo2024_MD_formica_Actz_Encoder" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1723269861264"/>
+</session>
