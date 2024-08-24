@@ -530,8 +530,8 @@ void StartDefaultTask(void const * argument)
 	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[16] = { 0 };
-	uint8_t data_to_shoki[8] = { 0 };
-	uint8_t data_to_uator[8] = { 0 };
+	uint8_t data_to_shoki[1] = { 0 };
+	uint8_t data_to_uator[1] = { 0 };
 	//アドレスを宣??��?��?
 	struct sockaddr_in rxAddr, txAddr;
 	//ソケ??��?��?トを作�??
@@ -561,19 +561,10 @@ void StartDefaultTask(void const * argument)
 		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0, (struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�???��?��信する
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL, (struct sockaddr*) &rxAddr, &len); //受信処??��?��?(blocking)
 
-		for(int i=0; i<8; i++){
-			data_to_shoki[i] = (rxbuf[6] >> (7-i)) & 0x01;
-		}
+		data_to_shoki[0] = rxbuf[6];
 
-		data_to_uator[0] = 0;
-		data_to_uator[1] = 0;
-		data_to_uator[2] = 0;
-		data_to_uator[3] = 0;
-		data_to_uator[4] = (rxbuf[4] >> 1) & 0x01;
-		data_to_uator[5] = (rxbuf[4] >> 0) & 0x01;
-		data_to_uator[6] = (rxbuf[5] >> 1) & 0x01;
-		data_to_uator[7] = (rxbuf[5] >> 0) & 0x01;
 
+		data_to_uator[0] = rxbuf[4] << 2 | rxbuf[5];
 
 		// send to shoki
 		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan3)) {
@@ -593,7 +584,7 @@ void StartDefaultTask(void const * argument)
 			// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
 			uint32_t TxMailbox;
 			// メ????��?��??��?��???��?��??��?��?セージ送信
-			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, &data_to_shoki, &TxMailbox);
+			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, data_to_shoki, &TxMailbox);
 		}
 
 		// send to uator
@@ -614,7 +605,7 @@ void StartDefaultTask(void const * argument)
 			// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
 			uint32_t TxMailbox;
 			// メ????��?��??��?��???��?��??��?��?セージ送信
-			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, &data_to_uator, &TxMailbox);
+			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, data_to_uator, &TxMailbox);
 		}
 
 		// UDPから受け取った足回りデータ
