@@ -499,20 +499,36 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	// ゲイン設�?
-	float32_t Kp = 2;
-	float32_t Ki = 0.05;
-	float32_t Kd = 0.000;
+//	float32_t Kp = 2;
+//	float32_t Ki = 0.05;
+//	float32_t Kd = 0.000;
+//	float32_t f_i = 0.5f;	//for feedforwared
+//	float32_t f_j = 0.1f;	//for feedforwared
+//	for (int i = 0; i < 4; i++) {
+//		// Robomaster Initialize
+//		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
+//		// PID Initialize
+//		Robomaster[i].PID.Kp = Kp;
+//		Robomaster[i].PID.Ki = Ki;
+//		Robomaster[i].PID.Kd = Kd;
+//		arm_pid_init_f32(&Robomaster[i].PID, 1);
+//	}
+	/*yodai add BEGIN*///それぞれのタイヤ毎にゲイン調整できるようにしました.
+	float32_t Kp[4] = {1.8,1.8,1.8,1.8};
+	float32_t Ki[4] = {0.05,0.05,0.05,0.05};
+	float32_t Kd[4] = {0.000,0.000,0.000,0.000};
 	float32_t f_i = 0.5f;	//for feedforwared
 	float32_t f_j = 0.1f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
 		// PID Initialize
-		Robomaster[i].PID.Kp = Kp;
-		Robomaster[i].PID.Ki = Ki;
-		Robomaster[i].PID.Kd = Kd;
+		Robomaster[i].PID.Kp = Kp[i];
+		Robomaster[i].PID.Ki = Ki[i];
+		Robomaster[i].PID.Kd = Kd[i];
 		arm_pid_init_f32(&Robomaster[i].PID, 1);
 	}
+	/*yodai add END*/
 
 	/* Configure UDP */
 	// Data Buffer For UDP
