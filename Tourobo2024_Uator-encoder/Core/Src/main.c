@@ -123,7 +123,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			// deg/s to rpm
 			rpm_float[i] = deg_per_second[i] * 60 / 360;
-			rpm[i] = (int16_t)rpm_float[i];
+			rpm[i] = (int16_t)(rpm_float[i]*100.0f);
 
 //			rpm_buf[i][1] = rpm_buf[i][0];
 //			rpm_buf[i][0] = rpm_float[i];
@@ -139,9 +139,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		TxHeader.DLC = 8;
 
 		uint8_t TxData[8];
-		for(int i = 0; i < 4; i++) {
+		/*for(int i = 0; i < 4; i++) {
 				rpm[i] *= 100;
-		}
+		}*/
 		memcpy(TxData, rpm, 8);
 		CAN_TxMailBox_TypeDef TxMailBox;
 		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
