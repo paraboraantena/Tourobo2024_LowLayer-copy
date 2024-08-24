@@ -29,8 +29,8 @@
 /* USER CODE BEGIN PTD */
 //yodai add
 CAN_FilterTypeDef filter;
-TIM_HandleTypeDef htim1;
-TIM_HandleTypeDef htim3;
+//TIM_HandleTypeDef htim1;
+//TIM_HandleTypeDef htim3;
 CAN_TxHeaderTypeDef TxHeader;
 
 
@@ -53,6 +53,8 @@ CAN_TxHeaderTypeDef TxHeader;
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan2;
 
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim7;
 
 /* USER CODE BEGIN PV */
@@ -95,14 +97,15 @@ uint8_t ringArm_expand = 0;
 float naeEncTarget=0;
 float ringEncTarget=0;
 float e=0;//現在の誤差
-float de=0;//誤差の微??��?��?を近似計�?
-float ie=0;//誤差の積�?を近似計�?
-float u=0;//??��?��?終的な出??��?��?
+float de=0;//誤差の微???��?��??��?��?を近似計�?
+float ie_nae=0;//誤差の積�?を近似計�?
+float ie_ring = 0;
+float u=0;//???��?��??��?��?終的な出???��?��??��?��?
 float y = 0;//現在の値
-float r = 50;//目標�???��?��
+float r = 50;//目標�????��?��??��?��
 float e_pre_nae = 0;//前回の誤差
 float e_pre_ring = 0;//前回の誤差
-float T = 0.0001;//制御周??��?��?
+float T = 0.0001;//制御周???��?��??��?��?
 uint32_t TxMailbox;
 uint8_t TxData[8];
 /* USER CODE END PV */
@@ -112,6 +115,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN2_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -189,7 +194,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 			if(RxHeader.StdId == 0x401){
 				id = (RxHeader.IDE == CAN_ID_STD)? RxHeader.StdId : RxHeader.ExtId;     // ID
 				dlc = RxHeader.DLC;                                                     // DLC
-				data[0] = RxData[0];//多�?data[0]にしか格納されな??��?��?しそれで?��??��?��?                                                    // Data
+				data[0] = RxData[0];//多�?data[0]にしか格納されな???��?��??��?��?しそれで??��?��???��?��??��?��?                                                    // Data
 				data[1] = RxData[1];
 				data[2] = RxData[2];
 				data[3] = RxData[3];
@@ -199,7 +204,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 				data[7] = RxData[7];
 			}
 		}
-		naeArm_expand = (data[0]&0b00001000)>>3;//data[0]の5番目のビット情報を抜き�???��?��??��?��?
+		naeArm_expand = (data[0]&0b00001000)>>3;//data[0]の5番目のビット情報を抜き�????��?��??��?��???��?��??��?��?
 		naeArm_catch = (data[0]&0b00000100)>>2;
 		ringArm_expand = (data[0]&0b00000010)>>1;
 		ringArm_catch = data[0]&0b00000001;
@@ -207,26 +212,37 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	}
 }
 
-void pid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]???��?��??��?��?0???��?��??��?��?50でpid制御する.
-	y = angle[0];//エンコー??��?��?ー等を使??��?��?現在の値を取??��?��?
+void naePid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]????��?��??��?��???��?��??��?��?0????��?��??��?��???��?��??��?��?50でpid制御する.
+	y = angle[0];//エンコー???��?��??��?��?ー等を使???��?��??��?��?現在の値を取???��?��??��?��?
 	r = naeEncTarget;
-	e = r - y;//目標�???��?��との差を計�?
-//	de = (e - e_pre_nae)/T;
-	ie = ie + (e+e_pre_nae)*T/2;
-	u = KP*e + KI*ie + KD*de;//??��?��?終的な出力を計�?
+	e = r - y;//目標�????��?��??��?��との差を計�?
+	de = (e - e_pre_nae)/T;
+	ie_nae = ie_nae + (e+e_pre_nae)*T/2;
+	u = KP*e + KI*ie_nae + KD*de;//???��?��??��?��?終的な出力を計�?
+	e_pre_nae = e;
+}
+
+void ringPid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]????��?��??��?��???��?��??��?��?0????��?��??��?��???��?��??��?��?50でpid制御する.
+	y = angle[1];//エンコー???��?��??��?��?ー等を使???��?��??��?��?現在の値を取???��?��??��?��?
+	r = ringEncTarget;
+	e = r - y;//目標�????��?��??��?��との差を計�?
+	de = (e - e_pre_nae)/T;
+	ie_ring = ie_ring + (e+e_pre_ring)*T/2;
+	u = KP*e + KI*ie_ring + KD*de;//???��?��??��?��?終的な出力を計�?
+	e_pre_ring = e;
 }
 
 void moveNaeArm(){
 	float pwmR;
 	float pwmL;
-	//展開するか否??��?��?
+	//展開するか否???��?��??��?��?
 	if(naeArm_expand == 1){
 		naeEncTarget = 50;
 	}else{
 		naeEncTarget = 0;
 	}
 
-	//掴??��?��?か否??��?��?
+	//掴???��?��??��?��?か否???��?��??��?��?
 	if(naeArm_catch == 1){
 		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
 	}else{
@@ -234,9 +250,7 @@ void moveNaeArm(){
 	}
 
 	//モーターをPID制御する
-	de = (e-e_pre_nae)/T;
-	pid(1,1,0,0);
-	e_pre_nae = e;
+	naePid(1,500,0,0);
 
 	//PIDの結果をモーターに反映
 	if(u>65535){
@@ -258,11 +272,11 @@ void moveNaeArm(){
 void moveRingArm(){
 	float pwmR;
 	float pwmL;
-	//展開するか否??��?��?
+	//展開するか否???��?��??��?��?
 	if(ringArm_expand == 1){
 		ringEncTarget = 180;
 
-		//もし目標�???��?��に近けれ�???��?��エアシリを動かす??��?��?
+		//もし目標�????��?��??��?��に近けれ�????��?��??��?��エアシリを動かす???��?��??��?��?
 		if(angle[1]<ringEncTarget + 5 && ringEncTarget - 5<angle[1]){
 			HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 		}
@@ -271,7 +285,7 @@ void moveRingArm(){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
 		ringEncTarget = 0;
 	}
-	//掴??��?��?か否??��?��?
+	//掴???��?��??��?��?か否???��?��??��?��?
 	if(ringArm_catch == 1){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 	}else{
@@ -279,9 +293,7 @@ void moveRingArm(){
 	}
 
 	//モーターをPID制御する
-	de = (e - e_pre_ring)/T;
-	pid(1,1,0,0);
-	e_pre_ring = e;
+	ringPid(1,50,0,0);
 
 	//PIDの結果をモーターに反映
 	if(u>65535){
@@ -337,6 +349,8 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN2_Init();
   MX_TIM7_Init();
+  MX_TIM1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim7);
   HAL_CAN_Start(&hcan2);
@@ -347,18 +361,18 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);//pwm2R
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);//pwm2L
 
-//  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ?��?
-//  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ?��?
-//  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ?��?
-//  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ?��?
+//  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ??��?��?
+//  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ??��?��?
+//  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ??��?��?
+//  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ??��?��?
   filter.FilterIdHigh = 0;
   filter.FilterIdLow = 0;
   filter.FilterMaskIdHigh = 0;
   filter.FilterMaskIdLow = 0;
-  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー?��?
-  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格?��?
+  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー??��?��?
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格??��?��?
   filter.FilterBank           = 0;
-  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー?��?
+  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー??��?��?
   filter.SlaveStartFilterBank = 0;
   filter.FilterActivation     = ENABLE;
 
@@ -465,6 +479,128 @@ static void MX_CAN2_Init(void)
   /* USER CODE BEGIN CAN2_Init 2 */
 
   /* USER CODE END CAN2_Init 2 */
+
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
 
 }
 
