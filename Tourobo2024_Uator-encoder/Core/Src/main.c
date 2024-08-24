@@ -31,6 +31,9 @@
 CAN_FilterTypeDef filter;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
+CAN_TxHeaderTypeDef TxHeader;
+
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -51,7 +54,6 @@ TIM_HandleTypeDef htim3;
 CAN_HandleTypeDef hcan2;
 
 TIM_HandleTypeDef htim7;
-
 
 /* USER CODE BEGIN PV */
 int state_prev[4] = {};
@@ -82,8 +84,10 @@ uint16_t encoder_pins[4][2] = {{ENC1A_Pin, ENC1B_Pin},
 uint32_t id;
 uint32_t dlc;
 uint8_t data[8];
-uint32_t fId   =  0x400 << 21;        // フィルターID
-uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
+//uint32_t fId   =  0x400 << 21;        // フィルターID
+//uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
+uint32_t fId = 0;
+uint32_t fMask = 0;
 uint8_t naeArm_catch = 0;
 uint8_t naeArm_expand = 0;
 uint8_t ringArm_catch = 0;
@@ -91,14 +95,16 @@ uint8_t ringArm_expand = 0;
 float naeEncTarget=0;
 float ringEncTarget=0;
 float e=0;//現在の誤差
-float de=0;//誤差の微分を近似計算
-float ie=0;//誤差の積分を近似計算
-float u=0;//最終的な出力
+float de=0;//誤差の微??��?��?を近似計�?
+float ie=0;//誤差の積�?を近似計�?
+float u=0;//??��?��?終的な出??��?��?
 float y = 0;//現在の値
-float r = 50;//目標値
+float r = 50;//目標�???��?��
 float e_pre_nae = 0;//前回の誤差
 float e_pre_ring = 0;//前回の誤差
-float T = 0.0001;//制御周期
+float T = 0.0001;//制御周??��?��?
+uint32_t TxMailbox;
+uint8_t TxData[8];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -136,53 +142,54 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim == &htim7)
-	{
-		for(int i=0; i<4; i++)
-		{
-			deg_per_second[i] = (angle[i] - prev_angle[i])/DELTA_T;
-			prev_angle[i] = angle[i];
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//	if(htim == &htim7)
+//	{
+//		for(int i=0; i<4; i++)
+//		{
+//			deg_per_second[i] = (angle[i] - prev_angle[i])/DELTA_T;
+//			prev_angle[i] = angle[i];
+//
+//			// deg/s to rpm
+//			rpm_float[i] = deg_per_second[i] * 60 / 360;
+//			rpm[i] = (int16_t)rpm_float[i];
+//
+////			rpm_buf[i][1] = rpm_buf[i][0];
+////			rpm_buf[i][0] = rpm_float[i];
+////			angle_integral[i] += (rpm_buf[i][0] + rpm_buf[i][1]) * 360 / 60 * dt / 2;
+//		}
+//
+//		// CAN Transmit
+//		CAN_TxHeaderTypeDef TxHeader;
+//		TxHeader.IDE = CAN_ID_STD;
+//		TxHeader.RTR = CAN_RTR_DATA;
+//		TxHeader.TransmitGlobalTime = DISABLE;
+//		TxHeader.StdId = 0x400;
+//		TxHeader.DLC = 8;
+//
+//		uint8_t TxData[8];
+//		for(int i = 0; i < 4; i++) {
+//				rpm[i] *= 100;
+//		}
+//		memcpy(TxData, rpm, 8);
+//		CAN_TxMailBox_TypeDef TxMailBox;
+//		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
+//	}
+//}
 
-			// deg/s to rpm
-			rpm_float[i] = deg_per_second[i] * 60 / 360;
-			rpm[i] = (int16_t)rpm_float[i];
-
-//			rpm_buf[i][1] = rpm_buf[i][0];
-//			rpm_buf[i][0] = rpm_float[i];
-//			angle_integral[i] += (rpm_buf[i][0] + rpm_buf[i][1]) * 360 / 60 * dt / 2;
-		}
-
-		// CAN Transmit
-		CAN_TxHeaderTypeDef TxHeader;
-		TxHeader.IDE = CAN_ID_STD;
-		TxHeader.RTR = CAN_RTR_DATA;
-		TxHeader.TransmitGlobalTime = DISABLE;
-		TxHeader.StdId = 0x400;
-		TxHeader.DLC = 8;
-
-		uint8_t TxData[8];
-		for(int i = 0; i < 4; i++) {
-				rpm[i] *= 100;
-		}
-		memcpy(TxData, rpm, 8);
-		CAN_TxMailBox_TypeDef TxMailBox;
-		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
-	}
-}
 //yodai add
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	if(hcan==&hcan2){
 		CAN_RxHeaderTypeDef RxHeader;
 		uint8_t RxData[8];
-		if(RxHeader.StdId == 0x401){
-			if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK)
-			{
+		if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK)
+		{
+			if(RxHeader.StdId == 0x401){
 				id = (RxHeader.IDE == CAN_ID_STD)? RxHeader.StdId : RxHeader.ExtId;     // ID
 				dlc = RxHeader.DLC;                                                     // DLC
-				data[0] = RxData[0];//多分data[0]にしか格納されないしそれで十分                                                    // Data
+				data[0] = RxData[0];//多�?data[0]にしか格納されな??��?��?しそれで?��??��?��?                                                    // Data
 				data[1] = RxData[1];
 				data[2] = RxData[2];
 				data[3] = RxData[3];
@@ -191,34 +198,35 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 				data[6] = RxData[6];
 				data[7] = RxData[7];
 			}
-			naeArm_expand = (data[0]&0b00001000)>>3;//data[0]の5番目のビット情報を抜き出す
-			naeArm_catch = (data[0]&0b00000100)>>2;
-			ringArm_expand = (data[0]&0b00000010)>>1;
-			ringArm_catch = data[0]&0b00000001;
 		}
+		naeArm_expand = (data[0]&0b00001000)>>3;//data[0]の5番目のビット情報を抜き�???��?��??��?��?
+		naeArm_catch = (data[0]&0b00000100)>>2;
+		ringArm_expand = (data[0]&0b00000010)>>1;
+		ringArm_catch = data[0]&0b00000001;
+
 	}
 }
 
-void pid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]�?0�?50でpid制御する.
-	y = angle[0];//エンコーダー等を使い現在の値を取得
+void pid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]???��?��??��?��?0???��?��??��?��?50でpid制御する.
+	y = angle[0];//エンコー??��?��?ー等を使??��?��?現在の値を取??��?��?
 	r = naeEncTarget;
-	e = r - y;//目標値との差を計算
+	e = r - y;//目標�???��?��との差を計�?
 //	de = (e - e_pre_nae)/T;
 	ie = ie + (e+e_pre_nae)*T/2;
-	u = KP*e + KI*ie + KD*de;//最終的な出力を計算
+	u = KP*e + KI*ie + KD*de;//??��?��?終的な出力を計�?
 }
 
 void moveNaeArm(){
 	float pwmR;
 	float pwmL;
-	//展開するか否か
+	//展開するか否??��?��?
 	if(naeArm_expand == 1){
 		naeEncTarget = 50;
 	}else{
 		naeEncTarget = 0;
 	}
 
-	//掴むか否か
+	//掴??��?��?か否??��?��?
 	if(naeArm_catch == 1){
 		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
 	}else{
@@ -243,18 +251,18 @@ void moveNaeArm(){
 		pwmR = 0;
 		pwmL = -1*u;
 	}
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, u*0.6);//duty=u/65535
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, u*0.6);//pwm1L
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pwmR*0.6);//duty=u/65535
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pwmL*0.6);//pwm1L
 }
 
 void moveRingArm(){
 	float pwmR;
 	float pwmL;
-	//展開するか否か
+	//展開するか否??��?��?
 	if(ringArm_expand == 1){
 		ringEncTarget = 180;
 
-		//もし目標値に近ければエアシリを動かす。
+		//もし目標�???��?��に近けれ�???��?��エアシリを動かす??��?��?
 		if(angle[1]<ringEncTarget + 5 && ringEncTarget - 5<angle[1]){
 			HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 		}
@@ -263,7 +271,7 @@ void moveRingArm(){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
 		ringEncTarget = 0;
 	}
-	//掴むか否か
+	//掴??��?��?か否??��?��?
 	if(ringArm_catch == 1){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 	}else{
@@ -288,8 +296,8 @@ void moveRingArm(){
 		pwmR = 0;
 		pwmL = -1*u;
 	}
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, u*0.6);//duty=u/65535
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, u*0.6);//pwm2L
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, pwmR*0.6);//duty=u/65535
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pwmL*0.6);//pwm2L
 }
 /* USER CODE END PFP */
 
@@ -338,21 +346,25 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);//pwm1L
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);//pwm2R
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);//pwm2L
-  /* USER CODE END 2 */
 
-  //yodai add
-  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上位16ビット
-  filter.FilterIdLow          = fId;                   // フィルターIDの下位16ビット
-  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上位16ビット
-  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下位16ビット
-  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モード
-  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格納
+//  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ?��?
+//  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ?��?
+//  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ?��?
+//  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ?��?
+  filter.FilterIdHigh = 0;
+  filter.FilterIdLow = 0;
+  filter.FilterMaskIdHigh = 0;
+  filter.FilterMaskIdLow = 0;
+  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー?��?
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格?��?
   filter.FilterBank           = 0;
-  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモード
-  filter.SlaveStartFilterBank = 14;
+  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー?��?
+  filter.SlaveStartFilterBank = 0;
   filter.FilterActivation     = ENABLE;
 
   HAL_CAN_ConfigFilter(&hcan2, &filter);
+  /* USER CODE END 2 */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -435,11 +447,11 @@ static void MX_CAN2_Init(void)
 
   /* USER CODE END CAN2_Init 1 */
   hcan2.Instance = CAN2;
-  hcan2.Init.Prescaler = 3;
+  hcan2.Init.Prescaler = 6;
   hcan2.Init.Mode = CAN_MODE_NORMAL;
   hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan2.Init.TimeSeg1 = CAN_BS1_12TQ;
-  hcan2.Init.TimeSeg2 = CAN_BS2_2TQ;
+  hcan2.Init.TimeSeg1 = CAN_BS1_11TQ;
+  hcan2.Init.TimeSeg2 = CAN_BS2_3TQ;
   hcan2.Init.TimeTriggeredMode = DISABLE;
   hcan2.Init.AutoBusOff = DISABLE;
   hcan2.Init.AutoWakeUp = DISABLE;
