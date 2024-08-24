@@ -139,6 +139,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		TxHeader.DLC = 8;
 
 		uint8_t TxData[8];
+		for(int i = 0; i < 4; i++) {
+				rpm[i] *= 100;
+		}
 		memcpy(TxData, rpm, 8);
 		CAN_TxMailBox_TypeDef TxMailBox;
 		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
