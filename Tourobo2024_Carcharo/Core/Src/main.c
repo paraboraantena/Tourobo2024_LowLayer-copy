@@ -176,7 +176,7 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 int main(void)
 {
 
-  /* USER CODE BEGIN 1 *
+  /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
 
@@ -352,7 +352,7 @@ static void MX_CAN3_Init(void)
 
   /* USER CODE END CAN3_Init 1 */
   hcan3.Instance = CAN3;
-  hcan3.Init.Prescaler = 6;
+  hcan3.Init.Prescaler = 3;
   hcan3.Init.Mode = CAN_MODE_NORMAL;
   hcan3.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan3.Init.TimeSeg1 = CAN_BS1_14TQ;
@@ -507,6 +507,7 @@ void StartDefaultTask(void const * argument)
 
 	// CAN2 Start
 	HAL_CAN_Start(&hcan2);
+	HAL_CAN_Start(&hcan3);
 	// CAN2 FIFO0 and FIFO1 Enable Interrupt
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
