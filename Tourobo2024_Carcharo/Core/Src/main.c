@@ -512,11 +512,11 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	// ゲイン設�?
-	float32_t Kp = 2;
-	float32_t Ki = 0.05;
-	float32_t Kd = 0.000;
+	float32_t Kp = 1.2;
+	float32_t Ki = 0.07;
+	float32_t Kd = 0.0002;
 	float32_t f_i = 0.5f;	//for feedforwared
-	float32_t f_j = 0.1f;	//for feedforwared
+	float32_t f_j = 0.15f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
