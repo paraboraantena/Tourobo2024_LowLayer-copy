@@ -94,9 +94,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan2) {
 
 			switch(data[7]){
 			case 1:
-				HAL_GPIO_WritePin(SOLV4_GPIO_Port, SOLV4_Pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(SOLV5_GPIO_Port, SOLV5_Pin, GPIO_PIN_SET);
 			case 0:
-				HAL_GPIO_WritePin(SOLV4_GPIO_Port, SOLV4_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(SOLV5_GPIO_Port, SOLV5_Pin, GPIO_PIN_RESET);
 			}
 		}
 	}
