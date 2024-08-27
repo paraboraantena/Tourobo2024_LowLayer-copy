@@ -565,7 +565,7 @@ void StartDefaultTask(void const * argument)
 		data_to_shoki[0] = rxbuf[6] << 1;
 
 
-		data_to_uator[0] = rxbuf[4] << 3 | rxbuf[5] << 1 | rxbuf[7];
+		data_to_uator[0] = rxbuf[7] << 4 | rxbuf[4] << 2 | rxbuf[5];
 
 		// send to shoki
 		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan3)) {

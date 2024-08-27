@@ -1942,16 +1942,16 @@ void StartDefaultTask(void const * argument)
  8001036:	f887 306c 	strb.w	r3, [r7, #108]	@ 0x6c
 
 
-		data_to_uator[0] = rxbuf[4] << 3 | rxbuf[5] << 1 | rxbuf[7];
- 800103a:	f9b7 3098 	ldrsh.w	r3, [r7, #152]	@ 0x98
- 800103e:	00db      	lsls	r3, r3, #3
+		data_to_uator[0] = rxbuf[7] << 4 | rxbuf[4] << 2 | rxbuf[5];
+ 800103a:	f9b7 309e 	ldrsh.w	r3, [r7, #158]	@ 0x9e
+ 800103e:	011b      	lsls	r3, r3, #4
  8001040:	b25a      	sxtb	r2, r3
- 8001042:	f9b7 309a 	ldrsh.w	r3, [r7, #154]	@ 0x9a
- 8001046:	005b      	lsls	r3, r3, #1
+ 8001042:	f9b7 3098 	ldrsh.w	r3, [r7, #152]	@ 0x98
+ 8001046:	009b      	lsls	r3, r3, #2
  8001048:	b25b      	sxtb	r3, r3
  800104a:	4313      	orrs	r3, r2
  800104c:	b25a      	sxtb	r2, r3
- 800104e:	f9b7 309e 	ldrsh.w	r3, [r7, #158]	@ 0x9e
+ 800104e:	f9b7 309a 	ldrsh.w	r3, [r7, #154]	@ 0x9a
  8001052:	b25b      	sxtb	r3, r3
  8001054:	4313      	orrs	r3, r2
  8001056:	b25b      	sxtb	r3, r3
