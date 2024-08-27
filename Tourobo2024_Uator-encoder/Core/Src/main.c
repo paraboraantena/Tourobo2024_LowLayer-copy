@@ -27,7 +27,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-//yodai add
 CAN_FilterTypeDef filter;
 //TIM_HandleTypeDef htim1;
 //TIM_HandleTypeDef htim3;
@@ -38,11 +37,13 @@ CAN_TxHeaderTypeDef TxHeader;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define PREV_MASK 0x1u //Mask for the previous state in determining direction of rotation.
-#define CURR_MASK 0x2u //Mask for the current state in determining direction of rotation.
-#define INVALID   0x3u //XORing two states where both bits have changed.
-#define PULSE_PER_REV 8192.f
-#define DELTA_T 0.01
+//#define PREV_MASK 0x1u //Mask for the previous state in determining direction of rotation.
+//#define CURR_MASK 0x2u //Mask for the current state in determining direction of rotation.
+//#define INVALID   0x3u //XORing two states where both bits have changed.
+//#define PULSE_PER_REV 8192.f
+//#define DELTA_T 0.01
+
+#define LED_NUMBER 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,6 +53,8 @@ CAN_TxHeaderTypeDef TxHeader;
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan2;
+
+SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
@@ -74,14 +77,14 @@ float angle_integral[4] = {0};
 
 
 //PinConfiguration
-GPIO_TypeDef* encoder_ports[4][2] = {{ENC1A_GPIO_Port, ENC1B_GPIO_Port},
-									 {ENC2A_GPIO_Port, ENC2B_GPIO_Port},
-									 {ENC3A_GPIO_Port, ENC3B_GPIO_Port},
-									 {ENC4A_GPIO_Port, ENC4B_GPIO_Port}};
-uint16_t encoder_pins[4][2] = {{ENC1A_Pin, ENC1B_Pin},
-							   {ENC2A_Pin, ENC2B_Pin},
-							   {ENC3A_Pin, ENC3B_Pin},
-							   {ENC4A_Pin, ENC4B_Pin}};
+//GPIO_TypeDef* encoder_ports[4][2] = {{ENC1A_GPIO_Port, ENC1B_GPIO_Port},
+//									 {ENC2A_GPIO_Port, ENC2B_GPIO_Port},
+//									 {ENC3A_GPIO_Port, ENC3B_GPIO_Port},
+//									 {ENC4A_GPIO_Port, ENC4B_GPIO_Port}};
+//uint16_t encoder_pins[4][2] = {{ENC1A_Pin, ENC1B_Pin},
+//							   {ENC2A_Pin, ENC2B_Pin},
+//							   {ENC3A_Pin, ENC3B_Pin},
+//							   {ENC4A_Pin, ENC4B_Pin}};
 //yodai add
 uint32_t id;
 uint32_t dlc;
@@ -94,18 +97,20 @@ uint8_t naeArm_catch = 0;
 uint8_t naeArm_expand = 0;
 uint8_t ringArm_catch = 0;
 uint8_t ringArm_expand = 0;
+uint8_t led_state;
+uint8_t LED_Data[3] = {};
 float naeEncTarget=0;
 float ringEncTarget=0;
 float e=0;//現在の誤差
-float de=0;//誤差の微???��?��??��?��?を近似計�?
+float de=0;//誤差の微????��?��??��?��???��?��??��?��?を近似計�?
 float ie_nae=0;//誤差の積�?を近似計�?
 float ie_ring = 0;
-float u=0;//???��?��??��?��?終的な出???��?��??��?��?
+float u=0;//????��?��??��?��???��?��??��?��?終的な出????��?��??��?��???��?��??��?��?
 float y = 0;//現在の値
-float r = 50;//目標�????��?��??��?��
+float r = 50;//目標�?????��?��??��?��???��?��??��?��
 float e_pre_nae = 0;//前回の誤差
 float e_pre_ring = 0;//前回の誤差
-float T = 0.0001;//制御周???��?��??��?��?
+float T = 0.0001;//制御周????��?��??��?��???��?��??��?��?
 uint32_t TxMailbox;
 uint8_t TxData[8];
 /* USER CODE END PV */
@@ -117,35 +122,36 @@ static void MX_CAN2_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    for (uint8_t i = 0; i < 4; i++)
-    {
-    	for(uint8_t j = 0; j < 2; j++)
-    	{
-    		if (GPIO_Pin == encoder_pins[i][j])
-    		{
-					int change = 0;
-
-					state_curr[i] = (HAL_GPIO_ReadPin(encoder_ports[i][0], encoder_pins[i][0]) << 1) |
-									 HAL_GPIO_ReadPin(encoder_ports[i][1], encoder_pins[i][1]);
-					if (((state_curr[i] ^ state_prev[i]) != INVALID) && (state_curr[i] != state_prev[i]))
-					{
-						change = (state_prev[i] & PREV_MASK) ^ ((state_curr[i] & CURR_MASK) >> 1);
-						if (change == 0)
-						{
-							change = -1;
-						}
-						pulse_count[i] -= change;
-					}
-					angle[i] = (360 / PULSE_PER_REV)*pulse_count[i];
-					state_prev[i] = state_curr[i];
-					return;
-    		}
-    	}
-    }
-}
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//    for (uint8_t i = 0; i < 4; i++)
+//    {
+//    	for(uint8_t j = 0; j < 2; j++)
+//    	{
+//    		if (GPIO_Pin == encoder_pins[i][j])
+//    		{
+//					int change = 0;
+//
+//					state_curr[i] = (HAL_GPIO_ReadPin(encoder_ports[i][0], encoder_pins[i][0]) << 1) |
+//									 HAL_GPIO_ReadPin(encoder_ports[i][1], encoder_pins[i][1]);
+//					if (((state_curr[i] ^ state_prev[i]) != INVALID) && (state_curr[i] != state_prev[i]))
+//					{
+//						change = (state_prev[i] & PREV_MASK) ^ ((state_curr[i] & CURR_MASK) >> 1);
+//						if (change == 0)
+//						{
+//							change = -1;
+//						}
+//						pulse_count[i] -= change;
+//					}
+//					angle[i] = (360 / PULSE_PER_REV)*pulse_count[i];
+//					state_prev[i] = state_curr[i];
+//					return;
+//    		}
+//    	}
+//    }
+//}
 
 //void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //{
@@ -194,7 +200,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 			if(RxHeader.StdId == 0x401){
 				id = (RxHeader.IDE == CAN_ID_STD)? RxHeader.StdId : RxHeader.ExtId;     // ID
 				dlc = RxHeader.DLC;                                                     // DLC
-				data[0] = RxData[0];//多�?data[0]にしか格納されな???��?��??��?��?しそれで??��?��???��?��??��?��?                                                    // Data
+				data[0] = RxData[0];//多�?data[0]にしか格納されな????��?��??��?��???��?��??��?��?しそれで???��?��??��?��????��?��??��?��???��?��??��?��?                                                    // Data
 				data[1] = RxData[1];
 				data[2] = RxData[2];
 				data[3] = RxData[3];
@@ -204,45 +210,45 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 				data[7] = RxData[7];
 			}
 		}
-		naeArm_expand = (data[0]&0b00001000)>>3;//data[0]の5番目のビット情報を抜き�????��?��??��?��???��?��??��?��?
+		naeArm_expand = (data[0]&0b00001000)>>3;//data[0]の5番目のビット情報を抜き�?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
 		naeArm_catch = (data[0]&0b00000100)>>2;
 		ringArm_expand = (data[0]&0b00000010)>>1;
 		ringArm_catch = data[0]&0b00000001;
-
+		led_state = (data[0] & 0b01110000) >> 4;
 	}
 }
 
-void naePid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]????��?��??��?��???��?��??��?��?0????��?��??��?��???��?��??��?��?50でpid制御する.
-	y = angle[0];//エンコー???��?��??��?��?ー等を使???��?��??��?��?現在の値を取???��?��??��?��?
+void naePid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?0?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?50でpid制御する.
+	y = angle[0];//エンコー????��?��??��?��???��?��??��?��?ー等を使????��?��??��?��???��?��??��?��?現在の値を取????��?��??��?��???��?��??��?��?
 	r = naeEncTarget;
-	e = r - y;//目標�????��?��??��?��との差を計�?
+	e = r - y;//目標�?????��?��??��?��???��?��??��?��との差を計�?
 	de = (e - e_pre_nae)/T;
 	ie_nae = ie_nae + (e+e_pre_nae)*T/2;
-	u = KP*e + KI*ie_nae + KD*de;//???��?��??��?��?終的な出力を計�?
+	u = KP*e + KI*ie_nae + KD*de;//????��?��??��?��???��?��??��?��?終的な出力を計�?
 	e_pre_nae = e;
 }
 
-void ringPid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]????��?��??��?��???��?��??��?��?0????��?��??��?��???��?��??��?��?50でpid制御する.
-	y = angle[1];//エンコー???��?��??��?��?ー等を使???��?��??��?��?現在の値を取???��?��??��?��?
+void ringPid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?0?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?50でpid制御する.
+	y = angle[1];//エンコー????��?��??��?��???��?��??��?��?ー等を使????��?��??��?��???��?��??��?��?現在の値を取????��?��??��?��???��?��??��?��?
 	r = ringEncTarget;
-	e = r - y;//目標�????��?��??��?��との差を計�?
+	e = r - y;//目標�?????��?��??��?��???��?��??��?��との差を計�?
 	de = (e - e_pre_nae)/T;
 	ie_ring = ie_ring + (e+e_pre_ring)*T/2;
-	u = KP*e + KI*ie_ring + KD*de;//???��?��??��?��?終的な出力を計�?
+	u = KP*e + KI*ie_ring + KD*de;//????��?��??��?��???��?��??��?��?終的な出力を計�?
 	e_pre_ring = e;
 }
 
 void moveNaeArm(){
 	float pwmR;
 	float pwmL;
-	//展開するか否???��?��??��?��?
+	//展開するか否????��?��??��?��???��?��??��?��?
 	if(naeArm_expand == 1){
 		naeEncTarget = 50;
 	}else{
 		naeEncTarget = 0;
 	}
 
-	//掴???��?��??��?��?か否???��?��??��?��?
+	//掴????��?��??��?��???��?��??��?��?か否????��?��??��?��???��?��??��?��?
 	if(naeArm_catch == 1){
 		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
 	}else{
@@ -272,11 +278,11 @@ void moveNaeArm(){
 void moveRingArm(){
 	float pwmR;
 	float pwmL;
-	//展開するか否???��?��??��?��?
+	//展開するか否????��?��??��?��???��?��??��?��?
 	if(ringArm_expand == 1){
 		ringEncTarget = 180;
 
-		//もし目標�????��?��??��?��に近けれ�????��?��??��?��エアシリを動かす???��?��??��?��?
+		//もし目標�?????��?��??��?��???��?��??��?��に近けれ�?????��?��??��?��???��?��??��?��エアシリを動かす????��?��??��?��???��?��??��?��?
 		if(angle[1]<ringEncTarget + 5 && ringEncTarget - 5<angle[1]){
 			HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 		}
@@ -285,7 +291,7 @@ void moveRingArm(){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
 		ringEncTarget = 0;
 	}
-	//掴???��?��??��?��?か否???��?��??��?��?
+	//掴????��?��??��?��???��?��??��?��?か否????��?��??��?��???��?��??��?��?
 	if(ringArm_catch == 1){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 	}else{
@@ -310,6 +316,32 @@ void moveRingArm(){
 	}
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, pwmR*0.6);//duty=u/65535
 	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pwmL*0.6);//pwm2L
+}
+
+void setLED (int GREEN, int RED, int BLUE)
+{
+	LED_Data[0] = GREEN;
+	LED_Data[1] = RED;
+	LED_Data[2] = BLUE;
+}
+
+void ws2812b_send (int GREEN, int RED, int BLUE)
+{
+	uint32_t color = GREEN<<16 | RED<<8 | BLUE;
+	uint8_t sendData[24*LED_NUMBER];
+
+	for(int i=0; i<LED_NUMBER; i++){
+		for(int j=0; j<24; j++){
+			if (((color>>(23-j))&0x01) == 1) {
+				sendData[i*24 + j] = 0b11000000;  // store 1
+			}
+			else{
+				sendData[i*24 + j] = 0b10000000;  // store 0
+			}
+		}
+	}
+
+	HAL_SPI_Transmit(&hspi1, sendData, 24*LED_NUMBER, 1000);
 }
 /* USER CODE END PFP */
 
@@ -351,32 +383,36 @@ int main(void)
   MX_TIM7_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim7);
   HAL_CAN_Start(&hcan2);
-  //yodai add
+
   HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);//pwm1R
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);//pwm1L
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);//pwm2R
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);//pwm2L
 
-//  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ??��?��?
-//  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ??��?��?
-//  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ??��?��?
-//  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ??��?��?
+//  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ???��?��??��?��?
+//  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ???��?��??��?��?
+//  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ???��?��??��?��?
+//  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ???��?��??��?��?
   filter.FilterIdHigh = 0;
   filter.FilterIdLow = 0;
   filter.FilterMaskIdHigh = 0;
   filter.FilterMaskIdLow = 0;
-  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー??��?��?
-  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格??��?��?
+  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー???��?��??��?��?
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格???��?��??��?��?
   filter.FilterBank           = 0;
-  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー??��?��?
+  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー???��?��??��?��?
   filter.SlaveStartFilterBank = 0;
   filter.FilterActivation     = ENABLE;
 
   HAL_CAN_ConfigFilter(&hcan2, &filter);
+
+  setLED(255,0,0);
+  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -385,6 +421,44 @@ int main(void)
   {
 	  moveNaeArm();
 	  moveRingArm();
+
+	  switch(led_state){
+	  case 0:
+		  HAL_Delay(1000);
+		  setLED(0,255,0);
+		  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
+		  break;
+
+	  case 1:
+		  HAL_Delay(1000);
+		  setLED(165,255,0);
+		  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
+		  break;
+
+	  case 2:
+		  HAL_Delay(1000);
+		  setLED(255,255,0);
+		  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
+		  break;
+
+	  case 3:
+		  HAL_Delay(1000);
+		  setLED(255,0,255);
+		  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
+		  break;
+
+	  case 4:
+		  setLED(0,0,255);
+		  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
+		  HAL_Delay(1000);
+		  break;
+
+	  case 5:
+		  setLED(0,255,255);
+		  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
+		  HAL_Delay(1000);
+		  break;
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -404,7 +478,7 @@ void SystemClock_Config(void)
   /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -414,18 +488,11 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 180;
+  RCC_OscInitStruct.PLL.PLLN = 64;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Activate the Over-Drive mode
-  */
-  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
@@ -436,10 +503,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -461,11 +528,11 @@ static void MX_CAN2_Init(void)
 
   /* USER CODE END CAN2_Init 1 */
   hcan2.Instance = CAN2;
-  hcan2.Init.Prescaler = 6;
+  hcan2.Init.Prescaler = 8;
   hcan2.Init.Mode = CAN_MODE_NORMAL;
   hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan2.Init.TimeSeg1 = CAN_BS1_11TQ;
-  hcan2.Init.TimeSeg2 = CAN_BS2_3TQ;
+  hcan2.Init.TimeSeg1 = CAN_BS1_2TQ;
+  hcan2.Init.TimeSeg2 = CAN_BS2_1TQ;
   hcan2.Init.TimeTriggeredMode = DISABLE;
   hcan2.Init.AutoBusOff = DISABLE;
   hcan2.Init.AutoWakeUp = DISABLE;
@@ -479,6 +546,44 @@ static void MX_CAN2_Init(void)
   /* USER CODE BEGIN CAN2_Init 2 */
 
   /* USER CODE END CAN2_Init 2 */
+
+}
+
+/**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -622,9 +727,9 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 900;
+  htim7.Init.Prescaler = 320-1;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 1000;
+  htim7.Init.Period = 1000-1;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -674,11 +779,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ENC4A_Pin ENC4B_Pin */
-  GPIO_InitStruct.Pin = ENC4A_Pin|ENC4B_Pin;
+  /*Configure GPIO pin : ENC4A_Pin */
+  GPIO_InitStruct.Pin = ENC4A_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(ENC4A_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SOLV6_Pin SOLV5_Pin */
   GPIO_InitStruct.Pin = SOLV6_Pin|SOLV5_Pin;
