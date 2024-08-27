@@ -562,10 +562,10 @@ void StartDefaultTask(void const * argument)
 		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0, (struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�???��?��信する
 		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL, (struct sockaddr*) &rxAddr, &len); //受信処??��?��?(blocking)
 
-		data_to_shoki[0] = rxbuf[6];
+		data_to_shoki[0] = rxbuf[6] << 1;
 
 
-		data_to_uator[0] = rxbuf[4] << 2 | rxbuf[5];
+		data_to_uator[0] = rxbuf[4] << 3 | rxbuf[5] << 1 | rxbuf[7];
 
 		// send to shoki
 		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan3)) {
