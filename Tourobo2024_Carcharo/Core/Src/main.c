@@ -572,9 +572,9 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	// ゲイン設�?
-	float32_t Kp = 1.2;
-	float32_t Ki = 0.07;
-	float32_t Kd = 0.0002;
+	float32_t Kp = 3.0;
+	float32_t Ki = 0.1;
+	float32_t Kd = 0.00;
 	// For Test with Robomaster Test Bord
 	adcGain[0] = Kp;
 	adcGain[1] = Ki;
