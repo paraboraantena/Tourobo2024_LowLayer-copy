@@ -528,10 +528,10 @@ void StartDefaultTask(void const * argument)
 	float32_t Ki = 0.07;
 	float32_t Kd = 0.0002;
 	adcGain[0] = Kp;
-	adcGain[1] = Ki;
+	adcGain[1] = Ki / 4096;
 	adcGain[2] = Kd;
-	float32_t f_i = 0.5f;	//for feedforwared
-	float32_t f_j = 0.15f;	//for feedforwared
+	float32_t f_i = 0.0f;	//for feedforwared
+	float32_t f_j = 0.00f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
