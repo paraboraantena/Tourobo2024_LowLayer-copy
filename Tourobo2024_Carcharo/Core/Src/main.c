@@ -149,6 +149,32 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 					Robomaster[i].EncoderAngularVelocity = (float32_t)temp / 100.0;
 					Robomaster[i].Event = 1;
 				}
+
+				// 送信
+				if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
+					// 送信用構�??体�?????��?��??��?��???��?��??��?��定義
+					CAN_TxHeaderTypeDef TxHeader;
+					// IDの設????��?��??��?��???��?��??��?��?
+					TxHeader.StdId = 0x200;
+					// 標準IDを使用
+					TxHeader.IDE = CAN_ID_STD;
+					// ????��?��??��?��???��?��??��?��?ータフレー????��?��??��?��???��?��??��?��? or リモートフレー????��?��??��?��???��?��??��?��?
+					TxHeader.RTR = CAN_RTR_DATA;
+					// ????��?��??��?��???��?��??��?��?ータ長????��?��??��?��???��?��??��?��? [byte]
+					TxHeader.DLC = 8;
+					// タイ????��?��??��?��???��?��??��?��?スタン????��?��??��?��???��?��??��?��?
+					TxHeader.TransmitGlobalTime = DISABLE;
+					// 8byteの送信????��?��??��?��???��?��??��?��?ータ
+					uint8_t TxData[8] = { 0 };
+					for (int i = 0; i < 4; i++) {
+						TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
+						TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
+					}
+					// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
+					uint32_t TxMailbox;
+					// メ????��?��??��?��???��?��??��?��?セージ送信
+					HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
+				}
 				break;
 			case 0x100:
 				id = RxHeader.StdId - 0x400;
@@ -474,28 +500,28 @@ void StartDefaultTask(void const * argument)
 	uint32_t fid;
 	uint32_t fmask;
 
-	/* CAN2 FIFO0 (For Robomaster) */
-	// ID and Mask Register
-	fid = 0x200;
-	fmask = 0x7F0;
-//	fid = 0x000;
-//	fmask = 0x000;
-	// CAN2のFilter Bankは14から
-	filter.SlaveStartFilterBank = 14;
-	// Filter Bank 14に設定開�?
-	filter.FilterBank = 14;
-	// For FIFO0
-	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	filter.FilterActivation = CAN_FILTER_ENABLE;
-	filter.FilterMode = CAN_FILTERMODE_IDMASK;
-	filter.FilterScale = CAN_FILTERSCALE_32BIT;
-	// ID and Mask
-	filter.FilterIdHigh = fid << 5;
-	filter.FilterIdLow = 0;
-	filter.FilterMaskIdHigh = fmask << 5;
-	filter.FilterMaskIdLow = 0;
-	// Filter適用
-	HAL_CAN_ConfigFilter(&hcan2, &filter);
+//	/* CAN2 FIFO0 (For Robomaster) */
+//	// ID and Mask Register
+//	fid = 0x200;
+//	fmask = 0x7F0;
+////	fid = 0x000;
+////	fmask = 0x000;
+//	// CAN2のFilter Bankは14から
+//	filter.SlaveStartFilterBank = 14;
+//	// Filter Bank 14に設定開�?
+//	filter.FilterBank = 14;
+//	// For FIFO0
+//	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+//	filter.FilterActivation = CAN_FILTER_ENABLE;
+//	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+//	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+//	// ID and Mask
+//	filter.FilterIdHigh = fid << 5;
+//	filter.FilterIdLow = 0;
+//	filter.FilterMaskIdHigh = fmask << 5;
+//	filter.FilterMaskIdLow = 0;
+//	// Filter適用
+//	HAL_CAN_ConfigFilter(&hcan2, &filter);
 
 	/* CAN2 FIFO0 (For Encoder) */
 	// ID and Mask Register
@@ -505,6 +531,27 @@ void StartDefaultTask(void const * argument)
 	filter.SlaveStartFilterBank = 14;
 	// Filter Bank 15に設定開�?
 	filter.FilterBank = 15;
+	// For FIFO0
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	filter.FilterActivation = CAN_FILTER_ENABLE;
+	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+	// ID and Mask Bit Configure
+	filter.FilterIdHigh = fid << 5;
+	filter.FilterIdLow = 0;
+	filter.FilterMaskIdHigh = fmask << 5;
+	filter.FilterMaskIdLow = 0;
+	// Filter適用
+	HAL_CAN_ConfigFilter(&hcan2, &filter);
+
+	/* CAN2 FIFO0 (For Robomaster Test) */
+	// ID and Mask Register
+	fid = 0x100;
+	fmask = 0x7F0;
+	// CAN2のFilter Bankは14から
+	filter.SlaveStartFilterBank = 14;
+	// Filter Bank 15に設定開�?
+	filter.FilterBank = 16;
 	// For FIFO0
 	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
 	filter.FilterActivation = CAN_FILTER_ENABLE;
@@ -528,8 +575,9 @@ void StartDefaultTask(void const * argument)
 	float32_t Kp = 1.2;
 	float32_t Ki = 0.07;
 	float32_t Kd = 0.0002;
+	// For Test with Robomaster Test Bord
 	adcGain[0] = Kp;
-	adcGain[1] = Ki / 4096;
+	adcGain[1] = Ki;
 	adcGain[2] = Kd;
 	float32_t f_i = 0.0f;	//for feedforwared
 	float32_t f_j = 0.00f;	//for feedforwared
