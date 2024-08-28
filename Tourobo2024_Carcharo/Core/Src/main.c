@@ -147,6 +147,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 					int16_t temp;
 					memcpy(&temp, &RxData[2 * i], sizeof(int16_t));
 					Robomaster[i].EncoderAngularVelocity = (float32_t)temp / 100.0;
+					Robomaster[i].Event = 1;
 				}
 				break;
 			case 0x100:
@@ -638,6 +639,7 @@ void StartDefaultTask(void const * argument)
 		Kd = adcGain[2];
 		for (int i = 0; i < 4; i++) {
 			if (Robomaster[i].Event == 1) {
+				Robomaster[i].Event = 0;
 				// 誤差e[n]の計�?
 				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].EncoderAngularVelocity;
 				// PID Controller
