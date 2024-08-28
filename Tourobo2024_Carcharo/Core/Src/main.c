@@ -146,40 +146,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 					int16_t temp;
 					memcpy(&temp, &RxData[2 * i], sizeof(int16_t));
 					Robomaster[i].EncoderAngularVelocity = (float32_t)temp / 100.0;
-					//calc moving average
-					mean[i].data[mean[i].pointer] = (RxData[2 * i] << 8 | RxData[2 * i + 1]);
-					mean[i].pointer = (mean[i].pointer==mean[i].size-1) ? 0u : mean[i].pointer+1;
-					Robomaster[i].EncoderAngularVelocity = 0;
-					for(uint8_t i=0u; i<mean[i].size; i++){
-						Robomaster[i].EncoderAngularVelocity += mean[i].data[i] / mean[i].size;
-					}
-					Robomaster[i].EncoderAngularVelocity += mean[i].size/2;
-				}
-
-				// 送信
-				if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-					// 送信用構�??体�?????��?��??��?��???��?��??��?��定義
-					CAN_TxHeaderTypeDef TxHeader;
-					// IDの設????��?��??��?��???��?��??��?��?
-					TxHeader.StdId = 0x200;
-					// 標準IDを使用
-					TxHeader.IDE = CAN_ID_STD;
-					// ????��?��??��?��???��?��??��?��?ータフレー????��?��??��?��???��?��??��?��? or リモートフレー????��?��??��?��???��?��??��?��?
-					TxHeader.RTR = CAN_RTR_DATA;
-					// ????��?��??��?��???��?��??��?��?ータ長????��?��??��?��???��?��??��?��? [byte]
-					TxHeader.DLC = 8;
-					// タイ????��?��??��?��???��?��??��?��?スタン????��?��??��?��???��?��??��?��?
-					TxHeader.TransmitGlobalTime = DISABLE;
-					// 8byteの送信????��?��??��?��???��?��??��?��?ータ
-					uint8_t TxData[8] = { 0 };
-					for (int i = 0; i < 4; i++) {
-						TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
-						TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
-					}
-					// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
-					uint32_t TxMailbox;
-					// メ????��?��??��?��???��?��??��?��?セージ送信
-					HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
 				}
 				break;
 			default:
@@ -497,26 +463,26 @@ void StartDefaultTask(void const * argument)
 
 	/* CAN2 FIFO0 (For Robomaster) */
 	// ID and Mask Register
-//	fid = 0x200;
-//	fmask = 0x7F0;
-////	fid = 0x000;
-////	fmask = 0x000;
-//	// CAN2のFilter Bankは14から
-//	filter.SlaveStartFilterBank = 14;
-//	// Filter Bank 14に設定開�?
-//	filter.FilterBank = 14;
-//	// For FIFO0
-//	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-//	filter.FilterActivation = CAN_FILTER_ENABLE;
-//	filter.FilterMode = CAN_FILTERMODE_IDMASK;
-//	filter.FilterScale = CAN_FILTERSCALE_32BIT;
-//	// ID and Mask
-//	filter.FilterIdHigh = fid << 5;
-//	filter.FilterIdLow = 0;
-//	filter.FilterMaskIdHigh = fmask << 5;
-//	filter.FilterMaskIdLow = 0;
-//	// Filter適用
-//	HAL_CAN_ConfigFilter(&hcan2, &filter);
+	fid = 0x200;
+	fmask = 0x7F0;
+//	fid = 0x000;
+//	fmask = 0x000;
+	// CAN2のFilter Bankは14から
+	filter.SlaveStartFilterBank = 14;
+	// Filter Bank 14に設定開�?
+	filter.FilterBank = 14;
+	// For FIFO0
+	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	filter.FilterActivation = CAN_FILTER_ENABLE;
+	filter.FilterMode = CAN_FILTERMODE_IDMASK;
+	filter.FilterScale = CAN_FILTERSCALE_32BIT;
+	// ID and Mask
+	filter.FilterIdHigh = fid << 5;
+	filter.FilterIdLow = 0;
+	filter.FilterMaskIdHigh = fmask << 5;
+	filter.FilterMaskIdLow = 0;
+	// Filter適用
+	HAL_CAN_ConfigFilter(&hcan2, &filter);
 
 	/* CAN2 FIFO0 (For Encoder) */
 	// ID and Mask Register
