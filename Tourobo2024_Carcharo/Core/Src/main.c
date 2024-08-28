@@ -84,6 +84,7 @@ uint32_t data[8];
 //int16_t omega;
 int16_t torque;
 Que mean[4];
+float32_t adcGain[3];
 
 // ロボ�?�ス用構�??体宣�?
 RobomasterTypedef Robomaster[4];
@@ -148,6 +149,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 					Robomaster[i].EncoderAngularVelocity = (float32_t)temp / 100.0;
 				}
 				break;
+			case 0x100:
+				id = RxHeader.StdId - 0x400;
+				dlc = RxHeader.DLC;
+				uint16_t adcVal[3];
+				memcpy(adcVal, RxData, 3 * sizeof(int16_t));
+				// P Gain
+				adcGain[0] = 10.0 * adcVal[0] / 4096;
+				// I Gain
+				adcGain[1] = 1.0 * adcVal[1] / 4096;
+				// D Gain
+				adcGain[2] = 0.01 * adcVal[2] / 4096;
 			default:
 				break;
 			}
@@ -515,6 +527,9 @@ void StartDefaultTask(void const * argument)
 	float32_t Kp = 1.2;
 	float32_t Ki = 0.07;
 	float32_t Kd = 0.0002;
+	adcGain[0] = Kp;
+	adcGain[1] = Ki;
+	adcGain[2] = Kd;
 	float32_t f_i = 0.5f;	//for feedforwared
 	float32_t f_j = 0.15f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
@@ -618,6 +633,9 @@ void StartDefaultTask(void const * argument)
 		}
 
 		// モーターの速度制御
+		Kp = adcGain[0];
+		Ki = adcGain[1];
+		Kd = adcGain[2];
 		for (int i = 0; i < 4; i++) {
 			if (Robomaster[i].Event == 1) {
 				// 誤差e[n]の計�?
