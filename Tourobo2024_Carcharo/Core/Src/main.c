@@ -559,15 +559,15 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	// ゲイン設�?
-	float Kp = 10.0;
-	float Ki = 0.4;
+	float Kp = 20.0;
+	float Ki = 0.1;
 	float Kd = 0.00;
 	/* For Test with Robomaster Test Bord */
 	adcGain[0] = Kp;
 	adcGain[1] = Ki;
 	adcGain[2] = Kd;
-	float f_i = 0.5f;	//for feedforwared
-	float f_j = 0.1f;	//for feedforwared
+	float f_i = 0.0f;	//for feedforwared
+	float f_j = 0.0f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
@@ -658,7 +658,8 @@ void StartDefaultTask(void const * argument)
 		// UDPから受け取った足回りデータ
 		for(int i = 0; i < 4; i++) {
 			// 減速比1:19を考慮
-			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] * 19 / (-100);
+//			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] * 19 / (-100);
+			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] / (-100);
 //			txbuf[i] = Robomaster[i].AngularVelocity * (-100);
 			txbuf[i] = (int16_t)(Robomaster[i].EncoderAngularVelocity * 100);
 		}
