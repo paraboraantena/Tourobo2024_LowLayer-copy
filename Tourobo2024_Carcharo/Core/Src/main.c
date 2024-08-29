@@ -560,8 +560,8 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	// ゲイン設�?
-	float32_t Kp = 3.0;
-	float32_t Ki = 0.1;
+	float32_t Kp = 10.0;
+	float32_t Ki = 0;
 	float32_t Kd = 0.00;
 	/* For Test with Robomaster Test Bord */
 	adcGain[0] = Kp;
@@ -677,7 +677,14 @@ void StartDefaultTask(void const * argument)
 				Robomaster[i].Buffs[1] = Robomaster[0].Buffs[0];
 				Robomaster[i].Buffs[0] = Robomaster[i].AngularVelocityError;
 				Robomaster[i].Integral += (Robomaster[i].Buffs[0] + Robomaster[i].Buffs[1]) * 1.0 / 2.0;
-				Robomaster[i].TargetTorque = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
+				float tekito = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
+				if(tekito>16383){
+					tekito = 16383;
+				}else if(tekito < -16383){
+					tekito = -16383;
+				}
+//				Robomaster[i].TargetTorque = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
+				Robomaster[i].TargetTorque = tekito;
 			}
 		}
 	}
