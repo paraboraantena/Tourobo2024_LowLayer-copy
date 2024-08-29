@@ -34,15 +34,10 @@ typedef struct {
 	float32_t PreTargetAngularVelocity;
 	// Angular Velocity Error
 	float32_t AngularVelocityError;
-	// buffs
+	// Buffs
 	float32_t Buffs[2];
-	// integral
+	// Integral
 	float32_t Integral;
-	// PID instance
-	/*
-	 * C(z) = Kp + (1 - z^{-1}) * Kd + 1 / (1 - z^{-1}) * Ki
-	 */
-	arm_pid_instance_f32 PID;
 } RobomasterTypedef;
 
 void Robomaster_InitZero(RobomasterTypedef *Robomaster);

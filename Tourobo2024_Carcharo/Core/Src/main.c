@@ -97,48 +97,48 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		if(HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK) {
 			switch(RxHeader.StdId & 0x7F0) {
 			case 0x200:
-				id = RxHeader.StdId - 0x200;
-				dlc = RxHeader.DLC;
-				for (size_t i = 0; i < 8; i++) {
-					data[i] = RxData[i];
-				}
-
-				Robomaster_RxCAN(&Robomaster[id - 1], &RxData[0]);
-
-				//calc moving average
-				mean[id-1].data[mean[id-1].pointer] = (data[2] << 8 | data[3]);
-				mean[id-1].pointer = (mean[id-1].pointer==mean[id-1].size-1) ? 0u : mean[id-1].pointer+1;
-				Robomaster[id-1].AngularVelocity = 0;
-				for(uint8_t i=0u; i<mean[id-1].size; i++){
-					Robomaster[id - 1].AngularVelocity += mean[id-1].data[i] / mean[id-1].size;
-				}
-				Robomaster[id - 1].AngularVelocity += mean[id-1].size/2;
-
-				// 送信
-				if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-					// 送信用構�??体�?????��?��??��?��???��?��??��?��定義
-					CAN_TxHeaderTypeDef TxHeader;
-					// IDの設????��?��??��?��???��?��??��?��?
-					TxHeader.StdId = 0x200;
-					// 標準IDを使用
-					TxHeader.IDE = CAN_ID_STD;
-					// ????��?��??��?��???��?��??��?��?ータフレー????��?��??��?��???��?��??��?��? or リモートフレー????��?��??��?��???��?��??��?��?
-					TxHeader.RTR = CAN_RTR_DATA;
-					// ????��?��??��?��???��?��??��?��?ータ長????��?��??��?��???��?��??��?��? [byte]
-					TxHeader.DLC = 8;
-					// タイ????��?��??��?��???��?��??��?��?スタン????��?��??��?��???��?��??��?��?
-					TxHeader.TransmitGlobalTime = DISABLE;
-					// 8byteの送信????��?��??��?��???��?��??��?��?ータ
-					uint8_t TxData[8] = { 0 };
-					for (int i = 0; i < 4; i++) {
-						TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
-						TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
-					}
-					// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
-					uint32_t TxMailbox;
-					// メ????��?��??��?��???��?��??��?��?セージ送信
-					HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
-				}
+//				id = RxHeader.StdId - 0x200;
+//				dlc = RxHeader.DLC;
+//				for (size_t i = 0; i < 8; i++) {
+//					data[i] = RxData[i];
+//				}
+//
+//				Robomaster_RxCAN(&Robomaster[id - 1], &RxData[0]);
+//
+//				//calc moving average
+//				mean[id-1].data[mean[id-1].pointer] = (data[2] << 8 | data[3]);
+//				mean[id-1].pointer = (mean[id-1].pointer==mean[id-1].size-1) ? 0u : mean[id-1].pointer+1;
+//				Robomaster[id-1].AngularVelocity = 0;
+//				for(uint8_t i=0u; i<mean[id-1].size; i++){
+//					Robomaster[id - 1].AngularVelocity += mean[id-1].data[i] / mean[id-1].size;
+//				}
+//				Robomaster[id - 1].AngularVelocity += mean[id-1].size/2;
+//
+//				// 送信
+//				if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
+//					// 送信用構�??体�?????��?��??��?��???��?��??��?��定義
+//					CAN_TxHeaderTypeDef TxHeader;
+//					// IDの設????��?��??��?��???��?��??��?��?
+//					TxHeader.StdId = 0x200;
+//					// 標準IDを使用
+//					TxHeader.IDE = CAN_ID_STD;
+//					// ????��?��??��?��???��?��??��?��?ータフレー????��?��??��?��???��?��??��?��? or リモートフレー????��?��??��?��???��?��??��?��?
+//					TxHeader.RTR = CAN_RTR_DATA;
+//					// ????��?��??��?��???��?��??��?��?ータ長????��?��??��?��???��?��??��?��? [byte]
+//					TxHeader.DLC = 8;
+//					// タイ????��?��??��?��???��?��??��?��?スタン????��?��??��?��???��?��??��?��?
+//					TxHeader.TransmitGlobalTime = DISABLE;
+//					// 8byteの送信????��?��??��?��???��?��??��?��?ータ
+//					uint8_t TxData[8] = { 0 };
+//					for (int i = 0; i < 4; i++) {
+//						TxData[2 * i] = Robomaster[i].TargetTorque >> 8;
+//						TxData[2 * i + 1] = Robomaster[i].TargetTorque & 0x00FF;
+//					}
+//					// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
+//					uint32_t TxMailbox;
+//					// メ????��?��??��?��???��?��??��?��?セージ送信
+//					HAL_CAN_AddTxMessage(&hcan2, &TxHeader, &TxData, &TxMailbox);
+//				}
 				break;
 			case 0x400:
 				id = RxHeader.StdId - 0x400;
@@ -192,18 +192,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 			}
 		}
 	}
-}
-
-void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
-	if(hcan == &hcan3) {
-
-//		CAN_RxHeaderTypeDef RxHeader;
-//		uint8_t RxData[8];
-//		if(HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK) {
-//		}
-
-
-		}
 }
 
 /* USER CODE END 0 */
@@ -575,7 +563,7 @@ void StartDefaultTask(void const * argument)
 	float32_t Kp = 3.0;
 	float32_t Ki = 0.1;
 	float32_t Kd = 0.00;
-	// For Test with Robomaster Test Bord
+	/* For Test with Robomaster Test Bord */
 	adcGain[0] = Kp;
 	adcGain[1] = Ki;
 	adcGain[2] = Kd;
@@ -584,11 +572,6 @@ void StartDefaultTask(void const * argument)
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
-		// PID Initialize
-		Robomaster[i].PID.Kp = Kp;
-		Robomaster[i].PID.Ki = Ki;
-		Robomaster[i].PID.Kd = Kd;
-		arm_pid_init_f32(&Robomaster[i].PID, 1);
 	}
 
 	/* Configure UDP */
