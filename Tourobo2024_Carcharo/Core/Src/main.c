@@ -24,7 +24,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "arm_math.h"
 #include "sockets.h"
 #include "robomaster.h"
 #include "string.h"
@@ -84,7 +83,7 @@ uint32_t data[8];
 //int16_t omega;
 int16_t torque;
 Que mean[4];
-float32_t adcGain[3];
+float adcGain[3];
 
 // ロボ�?�ス用構�??体宣�?
 RobomasterTypedef Robomaster[4];
@@ -146,7 +145,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 				for(int i = 0; i < 4; i++) {
 					int16_t temp;
 					memcpy(&temp, &RxData[2 * i], sizeof(int16_t));
-					Robomaster[i].EncoderAngularVelocity = (float32_t)temp / 100.0;
+					Robomaster[i].EncoderAngularVelocity = (float)temp / 100.0;
 					Robomaster[i].Event = 1;
 				}
 
@@ -560,15 +559,15 @@ void StartDefaultTask(void const * argument)
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 	// ゲイン設�?
-	float32_t Kp = 10.0;
-	float32_t Ki = 0.4;
-	float32_t Kd = 0.00;
+	float Kp = 10.0;
+	float Ki = 0.4;
+	float Kd = 0.00;
 	/* For Test with Robomaster Test Bord */
 	adcGain[0] = Kp;
 	adcGain[1] = Ki;
 	adcGain[2] = Kd;
-	float32_t f_i = 0.5f;	//for feedforwared
-	float32_t f_j = 0.1f;	//for feedforwared
+	float f_i = 0.5f;	//for feedforwared
+	float f_j = 0.1f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
@@ -659,7 +658,7 @@ void StartDefaultTask(void const * argument)
 		// UDPから受け取った足回りデータ
 		for(int i = 0; i < 4; i++) {
 			// 減速比1:19を考慮
-			Robomaster[i].TargetAngularVelocity = (float32_t)rxbuf[i] * 19 / (-100);
+			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] * 19 / (-100);
 //			txbuf[i] = Robomaster[i].AngularVelocity * (-100);
 			txbuf[i] = (int16_t)(Robomaster[i].EncoderAngularVelocity * 100);
 		}
@@ -672,14 +671,14 @@ void StartDefaultTask(void const * argument)
 			if (Robomaster[i].Event == 1) {
 				Robomaster[i].Event = 0;
 				// 誤差e[n]の計�?
-				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].EncoderAngularVelocity;
+				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float)Robomaster[i].EncoderAngularVelocity;
 				// PID Controller
-				Robomaster[i].Buffs[1] = Robomaster[i].Buffs[0];
-				Robomaster[i].Buffs[0] = Robomaster[i].AngularVelocityError;
-				Robomaster[i].Integral += (Robomaster[i].Buffs[0] + Robomaster[i].Buffs[1]) * 1.0 / 2.0;
+				Robomaster[i].Integral += (Robomaster[i].PreAngularVelocityError + Robomaster[i].AngularVelocityError) * 1.0 / 2.0;
 				/*オーバーフロー対策*/
-				float tekito = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
+				float tekito = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
+				// 更新
 				Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
+				Robomaster[i].PreAngularVelocityError = Robomaster[i].AngularVelocityError;
 				if(tekito>16383){
 					tekito = 16383;
 				}else if(tekito < -16383){
