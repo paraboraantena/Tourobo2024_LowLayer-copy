@@ -561,14 +561,14 @@ void StartDefaultTask(void const * argument)
 
 	// ゲイン設�?
 	float32_t Kp = 10.0;
-	float32_t Ki = 0;
+	float32_t Ki = 0.4;
 	float32_t Kd = 0.00;
 	/* For Test with Robomaster Test Bord */
 	adcGain[0] = Kp;
 	adcGain[1] = Ki;
 	adcGain[2] = Kd;
-	float32_t f_i = 0.0f;	//for feedforwared
-	float32_t f_j = 0.00f;	//for feedforwared
+	float32_t f_i = 0.5f;	//for feedforwared
+	float32_t f_j = 0.1f;	//for feedforwared
 	for (int i = 0; i < 4; i++) {
 		// Robomaster Initialize
 		memset(&Robomaster[i], 0, sizeof(RobomasterTypedef));
@@ -674,10 +674,12 @@ void StartDefaultTask(void const * argument)
 				// 誤差e[n]の計�?
 				Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - (float32_t)Robomaster[i].EncoderAngularVelocity;
 				// PID Controller
-				Robomaster[i].Buffs[1] = Robomaster[0].Buffs[0];
+				Robomaster[i].Buffs[1] = Robomaster[i].Buffs[0];
 				Robomaster[i].Buffs[0] = Robomaster[i].AngularVelocityError;
 				Robomaster[i].Integral += (Robomaster[i].Buffs[0] + Robomaster[i].Buffs[1]) * 1.0 / 2.0;
-				float tekito = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
+				/*オーバーフロー対策*/
+				float tekito = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
+				Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
 				if(tekito>16383){
 					tekito = 16383;
 				}else if(tekito < -16383){
