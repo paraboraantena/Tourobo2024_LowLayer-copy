@@ -27,12 +27,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-//yodai add
-CAN_FilterTypeDef filter;
-//TIM_HandleTypeDef htim1;
-//TIM_HandleTypeDef htim3;
-CAN_TxHeaderTypeDef TxHeader;
-
 
 /* USER CODE END PTD */
 
@@ -53,8 +47,6 @@ CAN_TxHeaderTypeDef TxHeader;
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan2;
 
-TIM_HandleTypeDef htim1;
-TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim7;
 
 /* USER CODE BEGIN PV */
@@ -82,32 +74,6 @@ uint16_t encoder_pins[4][2] = {{ENC1A_Pin, ENC1B_Pin},
 							   {ENC2A_Pin, ENC2B_Pin},
 							   {ENC3A_Pin, ENC3B_Pin},
 							   {ENC4A_Pin, ENC4B_Pin}};
-//yodai add
-uint32_t id;
-uint32_t dlc;
-uint8_t data[8];
-//uint32_t fId   =  0x400 << 21;        // フィルターID
-//uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
-uint32_t fId = 0;
-uint32_t fMask = 0;
-uint8_t naeArm_catch = 0;
-uint8_t naeArm_expand = 0;
-uint8_t ringArm_catch = 0;
-uint8_t ringArm_expand = 0;
-float naeEncTarget=0;
-float ringEncTarget=0;
-float e=0;//現在の誤差
-float de=0;//誤差の微??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?を近似計�?
-float ie_nae=0;//誤差の積�?を近似計�?
-float ie_ring = 0;
-float u=0;//??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?終的な出??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-float y = 0;//現在の値
-float r = 50;//目標�???????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��
-float e_pre_nae = 0;//前回の誤差
-float e_pre_ring = 0;//前回の誤差
-float T = 0.0001;//制御周??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-uint32_t TxMailbox;
-uint8_t TxData[8];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,8 +81,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN2_Init(void);
 static void MX_TIM7_Init(void);
-static void MX_TIM1_Init(void);
-static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -149,6 +113,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+
 	if(htim == &htim7)
 	{
 		for(int i=0; i<4; i++)
@@ -158,7 +123,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			// deg/s to rpm
 			rpm_float[i] = deg_per_second[i] * 60 / 360;
-			rpm[i] = (int16_t)(rpm_float[i]*100);
+			rpm[i] = (int16_t)rpm_float[i];
 
 //			rpm_buf[i][1] = rpm_buf[i][0];
 //			rpm_buf[i][0] = rpm_float[i];
@@ -166,25 +131,22 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 		// CAN Transmit
-		if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-			CAN_TxHeaderTypeDef TxHeader;
-			TxHeader.IDE = CAN_ID_STD;
-			TxHeader.RTR = CAN_RTR_DATA;
-			TxHeader.TransmitGlobalTime = DISABLE;
-			TxHeader.StdId = 0x400;
-			TxHeader.DLC = 8;
+		CAN_TxHeaderTypeDef TxHeader;
+		TxHeader.IDE = CAN_ID_STD;
+		TxHeader.RTR = CAN_RTR_DATA;
+		TxHeader.TransmitGlobalTime = DISABLE;
+		TxHeader.StdId = 0x400;
+		TxHeader.DLC = 8;
 
-			uint8_t TxData[8];
-	//		for(int i = 0; i < 4; i++) {
-	//				rpm[i] *= 100;
-	//		}
-			memcpy(TxData, rpm, 8);
-			CAN_TxMailBox_TypeDef TxMailBox;
-			HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
+		uint8_t TxData[8];
+		for(int i = 0; i < 4; i++) {
+				rpm[i] *= 100;
 		}
+		memcpy(TxData, rpm, 8);
+		CAN_TxMailBox_TypeDef TxMailBox;
+		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
 	}
 }
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -223,41 +185,15 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN2_Init();
   MX_TIM7_Init();
-  MX_TIM1_Init();
-  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim7);
   HAL_CAN_Start(&hcan2);
-  //yodai add
-  HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);//pwm1R
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);//pwm1L
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);//pwm2R
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);//pwm2L
-
-//  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-//  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-//  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-//  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-  filter.FilterIdHigh = 0;
-  filter.FilterIdLow = 0;
-  filter.FilterMaskIdHigh = 0;
-  filter.FilterMaskIdLow = 0;
-  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-  filter.FilterBank           = 0;
-  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
-  filter.SlaveStartFilterBank = 0;
-  filter.FilterActivation     = ENABLE;
-
-  HAL_CAN_ConfigFilter(&hcan2, &filter);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -337,8 +273,8 @@ static void MX_CAN2_Init(void)
   hcan2.Init.Prescaler = 3;
   hcan2.Init.Mode = CAN_MODE_NORMAL;
   hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan2.Init.TimeSeg1 = CAN_BS1_11TQ;
-  hcan2.Init.TimeSeg2 = CAN_BS2_3TQ;
+  hcan2.Init.TimeSeg1 = CAN_BS1_12TQ;
+  hcan2.Init.TimeSeg2 = CAN_BS2_2TQ;
   hcan2.Init.TimeTriggeredMode = DISABLE;
   hcan2.Init.AutoBusOff = DISABLE;
   hcan2.Init.AutoWakeUp = DISABLE;
@@ -352,128 +288,6 @@ static void MX_CAN2_Init(void)
   /* USER CODE BEGIN CAN2_Init 2 */
 
   /* USER CODE END CAN2_Init 2 */
-
-}
-
-/**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM1_Init(void)
-{
-
-  /* USER CODE BEGIN TIM1_Init 0 */
-
-  /* USER CODE END TIM1_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
-
-  /* USER CODE BEGIN TIM1_Init 1 */
-
-  /* USER CODE END TIM1_Init 1 */
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
-  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
-  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
-  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
-  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM1_Init 2 */
-
-  /* USER CODE END TIM1_Init 2 */
-  HAL_TIM_MspPostInit(&htim1);
-
-}
-
-/**
-  * @brief TIM3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM3_Init(void)
-{
-
-  /* USER CODE BEGIN TIM3_Init 0 */
-
-  /* USER CODE END TIM3_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM3_Init 1 */
-
-  /* USER CODE END TIM3_Init 1 */
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM3_Init 2 */
-
-  /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
 
 }
 
@@ -495,9 +309,9 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 900-1;
+  htim7.Init.Prescaler = 900 - 1;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 1000-1;
+  htim7.Init.Period = 1000 - 1;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
