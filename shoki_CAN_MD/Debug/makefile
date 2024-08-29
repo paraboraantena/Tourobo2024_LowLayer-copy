@@ -84,8 +84,8 @@ all: main-build
 main-build: shoki_CAN_MD.elf secondary-outputs
 
 # Tool invocations
-shoki_CAN_MD.elf shoki_CAN_MD.map: $(OBJS) $(USER_OBJS) C:\Robohan\4-Tourobo\Tourobo2024_CubeIDE\Tourobo2024_LowLayer\shoki_CAN_MD\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "shoki_CAN_MD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Robohan\4-Tourobo\Tourobo2024_CubeIDE\Tourobo2024_LowLayer\shoki_CAN_MD\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="shoki_CAN_MD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+shoki_CAN_MD.elf shoki_CAN_MD.map: $(OBJS) $(USER_OBJS) C:\Users\harut\Documents\Robohan\Tourobo2024_LowLayer\shoki_CAN_MD\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "shoki_CAN_MD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\harut\Documents\Robohan\Tourobo2024_LowLayer\shoki_CAN_MD\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="shoki_CAN_MD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
