@@ -1328,8 +1328,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  8000fb0:	6bfb      	ldr	r3, [r7, #60]	@ 0x3c
  8000fb2:	2b03      	cmp	r3, #3
  8000fb4:	f77f af74 	ble.w	8000ea0 <HAL_TIM_PeriodElapsedCallback+0x18>
-//			rpm_buf[i][0] = rpm_float[i];
-//			angle_integral[i] += (rpm_buf[i][0] + rpm_buf[i][1]) * 360 / 60 * dt / 2;
 		}
 
 		// CAN Transmit
@@ -1388,7 +1386,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  8001010:	2b03      	cmp	r3, #3
  8001012:	dde5      	ble.n	8000fe0 <HAL_TIM_PeriodElapsedCallback+0x158>
 			}
-			memcpy(TxData, rpm, 8);
+			memcpy(TxData, rpm, sizeof(TxData));
  8001014:	4a13      	ldr	r2, [pc, #76]	@ (8001064 <HAL_TIM_PeriodElapsedCallback+0x1dc>)
  8001016:	f107 0318 	add.w	r3, r7, #24
  800101a:	e892 0003 	ldmia.w	r2, {r0, r1}
