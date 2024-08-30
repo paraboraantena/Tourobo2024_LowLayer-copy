@@ -83,12 +83,13 @@ uint32_t data[8];
 //int16_t omega;
 int16_t torque;
 Que mean[4];
+float angle[4] = {0};
 
 // ロボ�?�ス用構�??体宣�?
 RobomasterTypedef Robomaster[4];
 
 // ゲイン設�?
-float Kp = 10.0;
+float Kp = 20.0;
 float Ki = 0.0;
 float Kd = 0.00;
 float f_i = 0.0f;	//for feedforwared
@@ -110,6 +111,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 					int16_t temp;
 					memcpy(&temp, &RxData[2 * i], sizeof(int16_t));
 					Robomaster[i].EncoderAngularVelocity = (float)temp / 100.0;
+					angle[i] += Robomaster[i].EncoderAngularVelocity * 0.01;
 					Robomaster[i].Event = 1;
 				}
 
@@ -122,13 +124,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 						// Integral
 						Robomaster[i].Integral += (Robomaster[i].PreAngularVelocityError + Robomaster[i].AngularVelocityError) * 1.0 / 2.0;
 						// PID Controler
-						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
-//						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
-						if(control_val>16383){
-							control_val = 16383;
-						}else if(control_val < -16383){
-							control_val = -16383;
-						}
+//						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
+						float control_val = Kp * Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity;
 						Robomaster[i].TargetTorque = (int16_t)control_val;
 						// 更新
 						Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
