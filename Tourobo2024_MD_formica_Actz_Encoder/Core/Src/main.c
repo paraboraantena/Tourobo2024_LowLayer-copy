@@ -1,7 +1,5 @@
 /* USER CODE BEGIN Header */
-/**苗アー�?をpid制御により動かします�??
- * 初期状態では苗アー�?に取り付けられて�?るエンコー�?ーは0の値を返しますが、苗アー�?展開時�?�50あたりになります�??
- * 展開したり�?�収納したりするのでそれに対応できるようにします�??
+/**
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
@@ -66,19 +64,6 @@ float deg_per_second[4] = {};
 float rpm_float[4] = {0};
 int16_t rpm[4] = {0};
 
-/*yodai add*/
-float e=0;/*pid関�?*/
-float de=0;
-float ie=0;
-float u=0;
-float y = 0;
-float r = 50;
-float e_pre = 0;
-float T = 0.0001;
-
-float pwm1R=0;
-float pwm1L=0;
-
 
 //PinConfiguration
 GPIO_TypeDef* encoder_ports[4][2] = {{ENC1A_GPIO_Port, ENC1B_GPIO_Port},
@@ -134,31 +119,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 }
 
-/*yodai add*/
-void plant_pid(uint8_t rotDirection,float KP,float KI,float KD){//angle[0]�?0�?50でpid制御する.
-	y = angle[0];
-	e = r - y;
-	de = (e - e_pre)/T;
-	ie = ie + (e+e_pre)*T/2;
-	u = KP*e + KI*ie + KD*de;
-	if(u>65535){
-		u = 65535;
-	}else if(u<-65535){
-		u = -65535;
-	}
-	if(u>0){
-		pwm1R = u;
-		pwm1L = 0;
-	}else{
-		pwm1R = 0;
-		pwm1L = -1*u;
-	}
-}
-
-void moveMotor(){/*モーターを動かすプログラ�?*/
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pwm1R*0.5);// duty=x/65535
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pwm1L*0.5);// duty=x/65535
-}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -205,8 +165,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim5);
   HAL_CAN_Start(&hcan2);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);//pwm1L,PA10
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);//pwm1R,PA9
 
   /* USER CODE END 2 */
 
@@ -214,8 +172,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  plant_pid(1,1000,2,0);
-	  moveMotor();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
