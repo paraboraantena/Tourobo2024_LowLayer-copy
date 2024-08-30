@@ -135,7 +135,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		TxHeader.IDE = CAN_ID_STD;
 		TxHeader.RTR = CAN_RTR_DATA;
 		TxHeader.TransmitGlobalTime = DISABLE;
-		TxHeader.StdId = 0x400;
+		TxHeader.StdId = 0x100;
 		TxHeader.DLC = 8;
 
 		uint8_t TxData[8];
