@@ -123,28 +123,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			// deg/s to rpm
 			rpm_float[i] = deg_per_second[i] * 60 / 360;
-			rpm[i] = (int16_t)(rpm_float[i]*100.0f);
-
-//			rpm_buf[i][1] = rpm_buf[i][0];
-//			rpm_buf[i][0] = rpm_float[i];
-//			angle_integral[i] += (rpm_buf[i][0] + rpm_buf[i][1]) * 360 / 60 * dt / 2;
+			rpm[i] = (int16_t)rpm_float[i];
+			angle_integral[i] += (float)rpm[i] * 360 / 60 * 0.01;
 		}
 
 		// CAN Transmit
-		CAN_TxHeaderTypeDef TxHeader;
-		TxHeader.IDE = CAN_ID_STD;
-		TxHeader.RTR = CAN_RTR_DATA;
-		TxHeader.TransmitGlobalTime = DISABLE;
-		TxHeader.StdId = 0x400;
-		TxHeader.DLC = 8;
+		if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
+			CAN_TxHeaderTypeDef TxHeader;
+			TxHeader.IDE = CAN_ID_STD;
+			TxHeader.RTR = CAN_RTR_DATA;
+			TxHeader.TransmitGlobalTime = DISABLE;
+			TxHeader.StdId = 0x080;
+			TxHeader.DLC = 8;
 
-		uint8_t TxData[8];
-		/*for(int i = 0; i < 4; i++) {
-				rpm[i] *= 100;
-		}*/
-		memcpy(TxData, rpm, 8);
-		CAN_TxMailBox_TypeDef TxMailBox;
-		HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
+			uint8_t TxData[8];
+			for(int i = 0; i < 4; i++) {
+					rpm[i] *= 100;
+			}
+			memcpy(TxData, rpm, sizeof(TxData));
+			CAN_TxMailBox_TypeDef TxMailBox;
+			HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
+		}
 	}
 }
 /* USER CODE END PFP */
@@ -309,9 +308,9 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 900;
+  htim7.Init.Prescaler = 900 - 1;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 1000;
+  htim7.Init.Period = 1000 - 1;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
