@@ -111,7 +111,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 					int16_t temp;
 					memcpy(&temp, &RxData[2 * i], sizeof(int16_t));
 					Robomaster[i].EncoderAngularVelocity = (float)temp / 100.0;
-					angle[i] += Robomaster[i].EncoderAngularVelocity * 0.01;
+					angle[i] += Robomaster[i].EncoderAngularVelocity * 360 / 60 * 0.01;
 					Robomaster[i].Event = 1;
 				}
 
@@ -125,8 +125,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 						Robomaster[i].Integral += (Robomaster[i].PreAngularVelocityError + Robomaster[i].AngularVelocityError) * 1.0 / 2.0;
 						// PID Controler
 //						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
-						float control_val = Kp * Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity;
-						Robomaster[i].TargetTorque = (int16_t)control_val;
+						float control_val = Kp * (Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity);
+						Robomaster[i].TargetTorque = -1 * (int16_t)control_val;
 						// 更新
 						Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
 						Robomaster[i].PreAngularVelocityError = Robomaster[i].AngularVelocityError;
@@ -585,7 +585,7 @@ void StartDefaultTask(void const * argument)
 		for(int i = 0; i < 4; i++) {
 			// 減速比1:19を考慮
 //			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] * 19 / (-100);
-			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] / (-100);
+			Robomaster[i].TargetAngularVelocity = (float)rxbuf[i] / (100);
 //			txbuf[i] = Robomaster[i].AngularVelocity * (-100);
 			txbuf[i] = (int16_t)(Robomaster[i].EncoderAngularVelocity * 100);
 		}
