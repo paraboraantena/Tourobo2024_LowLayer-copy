@@ -89,11 +89,11 @@ float angle[4] = {0};
 RobomasterTypedef Robomaster[4];
 
 // ゲイン設�?
-float Kp = 20.0;
-float Ki = 0.0;
+float Kp = 25.0;
+float Ki = 0.001;
 float Kd = 0.00;
-float f_i = 0.0f;	//for feedforwared
-float f_j = 0.0f;	//for feedforwared
+float f_i = 0.5f;	//for feedforwared
+float f_j = 0.1f;	//for feedforwared
 
 // CAN受信コールバック関数
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
@@ -125,7 +125,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 						Robomaster[i].Integral += (Robomaster[i].PreAngularVelocityError + Robomaster[i].AngularVelocityError) * 1.0 / 2.0;
 						// PID Controler
 //						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
-						float control_val = Kp * (Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity);
+						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError);
+//						float control_val = Kp * (Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity);
+						/* 飽和対策 */
+						if(control_val > 16383) {
+								control_val = 16383;
+						} else if(control_val < -16383) {
+								control_val = -16383;
+						}
+						/* トルク指令 */
 						Robomaster[i].TargetTorque = -1 * (int16_t)control_val;
 						// 更新
 						Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
@@ -163,9 +171,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 				uint16_t adcVal[3];
 				memcpy(adcVal, RxData, 3 * sizeof(int16_t));
 				// P Gain
-				Kp = 20.0 * (float)adcVal[0] / 256;
+				Kp = 40.0 * (float)adcVal[0] / 256;
 				// I Gain
-				Ki = 1.0 * (float)adcVal[1] / 256;
+				Ki = 0.005 * (float)adcVal[1] / 256;
 				// D Gain
 				Kd = 0.01 * (float)adcVal[2] / 256;
 				break;
