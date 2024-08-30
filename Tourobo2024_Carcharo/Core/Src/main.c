@@ -103,8 +103,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 			switch(RxHeader.StdId & 0x7F0) {
 			case 0x200:
 				break;
-			case 0x400:
-				id = RxHeader.StdId - 0x400;
+			case 0x080:
+				id = RxHeader.StdId - 0x080;
 				dlc = RxHeader.DLC;
 				for(int i = 0; i < 4; i++) {
 					int16_t temp;
@@ -119,20 +119,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 						Robomaster[i].Event = 0;
 						// 誤差e[n]の計�?
 						Robomaster[i].AngularVelocityError = Robomaster[i].TargetAngularVelocity - Robomaster[i].EncoderAngularVelocity;
-						// PID Controller
+						// Integral
 						Robomaster[i].Integral += (Robomaster[i].PreAngularVelocityError + Robomaster[i].AngularVelocityError) * 1.0 / 2.0;
-						/*オーバーフロー対策*/
+						// PID Controler
 						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].AngularVelocityError - Robomaster[i].PreAngularVelocityError) + (f_i+f_j)*Robomaster[i].TargetAngularVelocity - f_i*Robomaster[i].PreTargetAngularVelocity;
-						// 更新
-						Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
-						Robomaster[i].PreAngularVelocityError = Robomaster[i].AngularVelocityError;
+//						float control_val = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
 						if(control_val>16383){
 							control_val = 16383;
 						}else if(control_val < -16383){
 							control_val = -16383;
 						}
-		//				Robomaster[i].TargetTorque = Kp * Robomaster[i].AngularVelocityError + Ki * Robomaster[i].Integral + Kd * (Robomaster[i].Buffs[0] - Robomaster[i].Buffs[1]);
-						Robomaster[i].TargetTorque = control_val;
+						Robomaster[i].TargetTorque = (int16_t)control_val;
+						// 更新
+						Robomaster[i].PreTargetAngularVelocity = Robomaster[i].TargetAngularVelocity;
+						Robomaster[i].PreAngularVelocityError = Robomaster[i].AngularVelocityError;
 					}
 				}
 
@@ -166,11 +166,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 				uint16_t adcVal[3];
 				memcpy(adcVal, RxData, 3 * sizeof(int16_t));
 				// P Gain
-				Kp = 10.0 * adcVal[0] / 4096;
+				Kp = 20.0 * (float)adcVal[0] / 256;
 				// I Gain
-				Ki = 1.0 * adcVal[1] / 4096;
+				Ki = 1.0 * (float)adcVal[1] / 256;
 				// D Gain
-				Kd = 0.01 * adcVal[2] / 4096;
+				Kd = 0.01 * (float)adcVal[2] / 256;
+				break;
 			default:
 				break;
 			}
@@ -497,7 +498,7 @@ void StartDefaultTask(void const * argument)
 
 	/* CAN2 FIFO0 (For Encoder) */
 	// ID and Mask Register
-	fid = 0x400;
+	fid = 0x080;
 	fmask = 0x7F0;
 	// CAN2のFilter Bankは14から
 	filter.SlaveStartFilterBank = 14;
