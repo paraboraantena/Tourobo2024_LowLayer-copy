@@ -76,7 +76,7 @@ enum RX_COMMAND{
 };
 
 volatile uint16_t adc_buf[BUF_SIZE] = {0};
-volatile float current_threshold[BUF_SIZE] = {0.0f};
+volatile float current_threshold[BUF_SIZE] = {0.0f, 0.0f};
 volatile bool return_flag;
 volatile bool states[2];
 /* USER CODE END 0 */
@@ -121,6 +121,7 @@ int main(void)
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf, BUF_SIZE);
   HAL_TIM_Base_Stop_IT(&htim16);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
 
   return_flag = false;
   /* USER CODE END 2 */
@@ -442,6 +443,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_2, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : PF1 */
   GPIO_InitStruct.Pin = GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -461,6 +465,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -475,6 +486,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_)
     		case SET_THRE:
     			current_threshold[KAI] = (rx_data[1]<<8 | rx_data[2])/10.0f;
     			current_threshold[KON] = (rx_data[3]<<8 | rx_data[4])/10.0f;
+
     			states[KAI] = true;
     			states[KON] = true;
 
@@ -487,26 +499,35 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_)
     		case START:
     			HAL_TIM_Base_Stop_IT(&htim16);
     			HAL_TIM_Base_Start_IT(&htim16);
-    			if(rx_data[1]==KAI){
+    			if(rx_data[1]){
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, SET);
-				}else if(rx_data[1]==KON){
+					states[KAI] = true;
+				}
+    			if(rx_data[2]){
     				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, SET);
+    				states[KON] = true;
 				}
     			return_flag = true;
     			break;
     		case STOP:
-    			HAL_TIM_Base_Stop_IT(&htim16);
-    			if(rx_data[1]==KAI){
+    			if(rx_data[1]){
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
-				}else if(rx_data[1]==KON){
-    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+					states[KAI] = false;
 				}
-    			break;
+    			if(rx_data[2]){
+    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+    				states[KON] = false;
+				}
+
+    			if(!states[KAI] && states[KON]){
+					HAL_TIM_Base_Stop_IT(&htim16);
+    			}
+				break;
     		case ASK:
     			uint16_t current_data[2];
 
-    			current_data[KAI] = adc_buf[KAI]*4096.0f/13.2f*10;
-    			current_data[KON] = adc_buf[KON]*4096.0f/13.2f*10;
+    			current_data[KAI] = (uint16_t)(adc_buf[KAI]*4096.0f/13.2f*10);
+    			current_data[KON] = (uint16_t)(adc_buf[KON]*4096.0f/13.2f*10);
 
     			CAN_TxHeaderTypeDef tx_header;
     			uint32_t tx_mailbox;
