@@ -1,6 +1,6 @@
 /* USER CODE BEGIN Header */
 /**ArmUatorのプログラムです。
- * Sole1,2,3を　ID0x401のCANデータの内容に従って動かします。
+ * Sole1,2,3,4をCarcharoから送られてくるID0x401のCANデータの内容に従って動かします。
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
@@ -70,7 +70,7 @@ uint32_t id;
 uint32_t dlc;
 uint8_t data[8];
 
-uint8_t sole[3];//3つのエアシリ状態を0,1で表現します
+uint8_t sole[4];//4つのエアシリ状態を0,1で表現します
 
 //PinConfiguration
 GPIO_TypeDef* encoder_ports[4][2] = {{ENC1A_GPIO_Port, ENC1B_GPIO_Port},
@@ -133,25 +133,33 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan){
 //		data[6] = RxData[6];
 //		data[7] = RxData[7];
 	}
-	sole[0]=data[0]&0b00000100>>2;//sole[0]:0or1
-	sole[1]=data[0]&0b00000010>1;//sole[1]:0or1
-	sole[2]=data[0]&0b00000001;//sole[2]:0or1
+	sole[0]=data[0]&0b00001000>>3;//sole[0]:0or1
+	sole[1]=data[0]&0b00000100>>2;//sole[1]:0or1
+	sole[2]=data[0]&0b00000010>>1;//sole[2]:0or1
+	sole[3]=data[0]&0b00000001;//sole[3]:0or1
+
 	if(sole[0]==1){
-		HAL_GPIO_Write_Pin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
 	}else{
-		HAL_GPIO_Write_Pin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_RESET);
 	}
 
 	if(sole[1]==1){
-		HAL_GPIO_Write_Pin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 	}else{
-		HAL_GPIO_Write_Pin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
 	}
 
 	if(sole[2]==1){
-		HAL_GPIO_Write_Pin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_SET);
 	}else{
-		HAL_GPIO_Write_Pin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_RESET);
+	}
+
+	if(sole[3]==1){
+		HAL_GPIO_WritePin(SOLV4_GPIO_Port,SOLV4_Pin,GPIO_PIN_SET);
+	}else{
+		HAL_GPIO_WritePin(SOLV4_GPIO_Port,SOLV4_Pin,GPIO_PIN_RESET);
 	}
 }
 /* USER CODE END PFP */
