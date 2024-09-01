@@ -92,10 +92,11 @@ uint32_t fId = 0;
 uint32_t fMask = 0;
 //uint8_t naeArm_catch = 0;
 //uint8_t naeArm_expand = 0;
-uint8_t naeSole1 = 0;
-uint8_t naeSole2 = 0;
-uint8_t naeSole3 = 0;
-uint8_t naeSole4 = 0;
+uint8_t naeSole_FrontBack = 0;
+uint8_t naeSole_UpDown = 0;
+uint8_t naeSole_1catch = 0;
+uint8_t naeSole_2catch = 0;
+uint8_t naeSole_CatchState = 0;//全部で4状態
 uint8_t ringArm_catch = 0;
 uint8_t ringArm_expand = 0;
 float naeEncTarget=0;
@@ -208,10 +209,23 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 				data[7] = RxData[7];
 			}
 		}
-		naeSole1 = (data[0]&0b00100000)>>5;//naeSole1 は0or1
-		naeSole2 = (data[0]&0b00010000)>>4;//naeSole2 は0or1
-		naeSole3 = (data[0]&0b00001000)>>3;//naeSole3 は0or1
-		naeSole4 = (data[0]&0b00000100)>>2;//naeSole4 は0or1
+		naeSole_FrontBack = (data[0]&0b00100000)>>5;//naeSole_FrontBack は0or1
+		naeSole_UpDown = (data[0]&0b00010000)>>4;//naeSole_UpDpwn は0or1
+		naeSole_CatchState = (data[0]&0b00001100)>>2;
+		if(naeSole_CatchState == 0b00){
+			naeSole_2catch = 0;
+			naeSole_1catch = 0;
+		}else if(naeSole_CatchState == 0b01){
+			naeSole_2catch = 0;
+			naeSole_1catch = 1;
+		}else if(naeSole_CatchState == 0b10){
+			naeSole_2catch = 1;
+			naeSole_1catch = 0;
+		}else if(naeSole_CatchState == 0b11){
+			//do nothing
+		}
+//		naeSole3 = (data[0]&0b00001000)>>3;//naeSole3 は0or1
+//		naeSole4 = (data[0]&0b00000100)>>2;//naeSole4 は0or1
 		ringArm_expand = (data[0]&0b00000010)>>1;
 		ringArm_catch = data[0]&0b00000001;
 
@@ -239,25 +253,25 @@ void ringPid(uint8_t rotDire, float KP,float KI,float KD){//angle[0]??????��
 }
 
 void moveNaeArm(){
-	if(naeSole1==1){
+	if(naeSole_FrontBack==1){
 		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
 	}else{
 		HAL_GPIO_WritePin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_RESET);
 	}
 
-	if(naeSole2==1){
+	if(naeSole_UpDown==1){
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
 	}else{
 		HAL_GPIO_WritePin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
 	}
 
-	if(naeSole3==1){
+	if(naeSole_1catch==1){
 		HAL_GPIO_WritePin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_SET);
 	}else{
 		HAL_GPIO_WritePin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_RESET);
 	}
 
-	if(naeSole4==1){
+	if(naeSole_2catch==1){
 		HAL_GPIO_WritePin(SOLV4_GPIO_Port,SOLV4_Pin,GPIO_PIN_SET);
 	}else{
 		HAL_GPIO_WritePin(SOLV4_GPIO_Port,SOLV4_Pin,GPIO_PIN_RESET);
