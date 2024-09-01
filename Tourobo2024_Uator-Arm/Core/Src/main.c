@@ -1,5 +1,6 @@
 /* USER CODE BEGIN Header */
-/**
+/**ArmUatorのプログラムです。
+ * Sole1,2,3を　ID0x401のCANデータの内容に従って動かします。
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
@@ -55,15 +56,21 @@ int state_curr[4] = {};
 int pulse_count[4] = {};
 float prev_angle[4] = {};
 float angle[4] = {};
-float deg_per_second[4] = {};
-float rpm_float[4] = {0};
-int16_t rpm[4] = {0};
+//float deg_per_second[4] = {};
+//float rpm_float[4] = {0};
+//int16_t rpm[4] = {0};
+//
+//// For Test
+//float rpm_buf[4][2] = {0};
+//float dt = 0.01;
+//float angle_integral[4] = {0};
 
-// For Test
-float rpm_buf[4][2] = {0};
-float dt = 0.01;
-float angle_integral[4] = {0};
+CAN_FilterTypeDef filter;
+uint32_t id;
+uint32_t dlc;
+uint8_t data[8];
 
+uint8_t sole[3];//3つのエアシリ状態を0,1で表現します
 
 //PinConfiguration
 GPIO_TypeDef* encoder_ports[4][2] = {{ENC1A_GPIO_Port, ENC1B_GPIO_Port},
@@ -111,38 +118,40 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan){
+	CAN_RxHeaderTypeDef RxHeader;
+	uint8_t RxData[8];
+	if(HAL_CAN_GetRxMessage(hcan,CAN_RX_FIFO0,&RxHeader,RxData)==HAL_OK){
+		id = (RxHeader.IDE == CAN_ID_STD)? RxHeader.StdId : RxHeader.ExtId;     // ID
+		dlc = RxHeader.DLC;                                                     // DLC
+		data[0] = RxData[0];                                                    // Data
+//		data[1] = RxData[1];
+//		data[2] = RxData[2];
+//		data[3] = RxData[3];
+//		data[4] = RxData[4];
+//		data[5] = RxData[5];
+//		data[6] = RxData[6];
+//		data[7] = RxData[7];
+	}
+	sole[0]=data[0]&0b00000100>>2;//sole[0]:0or1
+	sole[1]=data[0]&0b00000010>1;//sole[1]:0or1
+	sole[2]=data[0]&0b00000001;//sole[2]:0or1
+	if(sole[0]==1){
+		HAL_GPIO_Write_Pin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_SET);
+	}else{
+		HAL_GPIO_Write_Pin(SOLV1_GPIO_Port,SOLV1_Pin,GPIO_PIN_RESET);
+	}
 
-	if(htim == &htim7)
-	{
-		for(int i=0; i<4; i++)
-		{
-			deg_per_second[i] = (angle[i] - prev_angle[i])/DELTA_T;
-			prev_angle[i] = angle[i];
+	if(sole[1]==1){
+		HAL_GPIO_Write_Pin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_SET);
+	}else{
+		HAL_GPIO_Write_Pin(SOLV2_GPIO_Port,SOLV2_Pin,GPIO_PIN_RESET);
+	}
 
-			// deg/s to rpm
-			rpm_float[i] = deg_per_second[i] * 60 / 360;
-			angle_integral[i] += rpm_float[i] * 360 / 60 * 0.01;
-		}
-
-		// CAN Transmit
-		if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan2)) {
-			CAN_TxHeaderTypeDef TxHeader;
-			TxHeader.IDE = CAN_ID_STD;
-			TxHeader.RTR = CAN_RTR_DATA;
-			TxHeader.TransmitGlobalTime = DISABLE;
-			TxHeader.StdId = 0x080;
-			TxHeader.DLC = 8;
-
-			uint8_t TxData[8];
-			for(int i = 0; i < 4; i++) {
-					rpm[i] = (int16_t)(rpm_float[i] * 100.0);
-			}
-			memcpy(TxData, rpm, sizeof(TxData));
-			CAN_TxMailBox_TypeDef TxMailBox;
-			HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailBox);
-		}
+	if(sole[2]==1){
+		HAL_GPIO_Write_Pin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_SET);
+	}else{
+		HAL_GPIO_Write_Pin(SOLV3_GPIO_Port,SOLV3_Pin,GPIO_PIN_RESET);
 	}
 }
 /* USER CODE END PFP */
@@ -184,7 +193,22 @@ int main(void)
   MX_CAN2_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim7);
+  uint32_t fId   = 0x401 << 21;        // フィルターID
+//  uint32_t fMask = 0x7F0 < 21; // フィルターマスク
+
+  filter.FilterIdHigh = fId >> 16;
+  filter.FilterIdLow = fId;
+  filter.FilterMaskIdHigh = 0;
+  filter.FilterMaskIdLow = 0;
+  filter.FilterScale = CAN_FILTERSCALE_32BIT;
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+  filter.FilterBank = 0;
+  filter.FilterMode = CAN_FILTERMODE_IDLIST;
+  filter.SlaveStartFilterBank = 14;
+  filter.FilterActivation = ENABLE;
+  HAL_CAN_ConfigFilter(&hcan2,&filter);
+
+  HAL_CAN_ActivateNotification(&hcan2,CAN_IT_RX_FIFO0_MSG_PENDING);
   HAL_CAN_Start(&hcan2);
   /* USER CODE END 2 */
 
