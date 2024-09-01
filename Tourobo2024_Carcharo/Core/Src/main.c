@@ -558,7 +558,7 @@ void StartDefaultTask(void const * argument)
 	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[16] = { 0 };
-	uint8_t data_to_LedUator[1] = { 0 };
+	uint8_t data_to_LedUator[2] = { 0,0 };
 	uint8_t data_to_ArmUator[1] = { 0 };
 	//アドレスを宣??��?��?
 	struct sockaddr_in rxAddr, txAddr;
@@ -598,10 +598,11 @@ void StartDefaultTask(void const * argument)
 			txbuf[i] = (int16_t)(Robomaster[i].EncoderAngularVelocity * 100);
 		}
 
-		data_to_LedUator[0] = rxbuf[6] << 1;
+		data_to_LedUator[0] = rxbuf[6];//for pantaSole
+		data_to_LedUator[1] = rxbuf[7];//for Led
 
 
-		data_to_ArmUator[0] = rxbuf[4] << 2 | rxbuf[5];
+		data_to_ArmUator[0] = rxbuf[4] << 2 | rxbuf[5];//for nae ring Arm
 
 		// send to shoki
 		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan3)) {
