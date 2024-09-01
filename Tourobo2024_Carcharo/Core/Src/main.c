@@ -558,8 +558,8 @@ void StartDefaultTask(void const * argument)
 	// Data Buffer For UDP
 	int16_t rxbuf[16] = { 0 };
 	int16_t txbuf[16] = { 0 };
-	uint8_t data_to_shoki[1] = { 0 };
-	uint8_t data_to_uator[1] = { 0 };
+	uint8_t data_to_LedUator[1] = { 0 };
+	uint8_t data_to_ArmUator[1] = { 0 };
 	//アドレスを宣??��?��?
 	struct sockaddr_in rxAddr, txAddr;
 	//ソケ??��?��?トを作�??
@@ -598,10 +598,10 @@ void StartDefaultTask(void const * argument)
 			txbuf[i] = (int16_t)(Robomaster[i].EncoderAngularVelocity * 100);
 		}
 
-		data_to_shoki[0] = rxbuf[6] << 1;
+		data_to_LedUator[0] = rxbuf[6] << 1;
 
 
-		data_to_uator[0] = rxbuf[7] << 4 | rxbuf[4] << 2 | rxbuf[5];
+		data_to_ArmUator[0] = rxbuf[4] << 2 | rxbuf[5];
 
 		// send to shoki
 		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan3)) {
@@ -621,7 +621,7 @@ void StartDefaultTask(void const * argument)
 			// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
 			uint32_t TxMailbox;
 			// メ????��?��??��?��???��?��??��?��?セージ送信
-			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, data_to_shoki, &TxMailbox);
+			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, data_to_LedUator, &TxMailbox);
 		}
 
 		// send to uator
@@ -642,7 +642,7 @@ void StartDefaultTask(void const * argument)
 			// 送信に使ったTxMailboxが�?????��?��??��?��???��?��??��?��納される
 			uint32_t TxMailbox;
 			// メ????��?��??��?��???��?��??��?��?セージ送信
-			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, data_to_uator, &TxMailbox);
+			HAL_CAN_AddTxMessage(&hcan3, &TxHeader, data_to_ArmUator, &TxMailbox);
 		}
 
 
