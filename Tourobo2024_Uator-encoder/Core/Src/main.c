@@ -35,7 +35,7 @@
 #define PREV_MASK 0x1u //Mask for the previous state in determining direction of rotation.
 #define CURR_MASK 0x2u //Mask for the current state in determining direction of rotation.
 #define INVALID   0x3u //XORing two states where both bits have changed.
-#define PULSE_PER_REV 8192.f
+#define PULSE_PER_REV 2048.f
 #define DELTA_T 0.01
 /* USER CODE END PD */
 

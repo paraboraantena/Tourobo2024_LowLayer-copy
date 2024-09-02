@@ -69,9 +69,6 @@ void Error_Handler(void);
 #define ENC4A_Pin GPIO_PIN_6
 #define ENC4A_GPIO_Port GPIOA
 #define ENC4A_EXTI_IRQn EXTI9_5_IRQn
-#define ENC4B_Pin GPIO_PIN_7
-#define ENC4B_GPIO_Port GPIOA
-#define ENC4B_EXTI_IRQn EXTI9_5_IRQn
 #define SOLV6_Pin GPIO_PIN_14
 #define SOLV6_GPIO_Port GPIOB
 #define SOLV5_Pin GPIO_PIN_15
