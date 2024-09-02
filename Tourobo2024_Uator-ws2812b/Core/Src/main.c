@@ -76,11 +76,13 @@ void ws2812b_send_green (void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan2) {
-	CAN_RxHeaderTypeDef RxHeader;
-	uint8_t RxData[2];
-	if (HAL_CAN_GetRxMessage(hcan2, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK) {
-		if(RxHeader.StdId == 0x201){
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+
+	if(hcan == &hcan2){
+		CAN_RxHeaderTypeDef RxHeader;
+		uint8_t RxData[2];
+		if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK) {
+
 
 			id = (RxHeader.IDE == CAN_ID_STD) ? RxHeader.StdId : RxHeader.ExtId;   // ID
 			dlc = RxHeader.DLC;                                                   // DLC
@@ -88,7 +90,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan2) {
 			data[1] = RxData[1];
 
 			for(int i=0; i<6; i++){
-				solenoid[i] = (data[0] >> (5-i)) | 0x01;
+				solenoid[i] = (data[0] >> (5-i)) & 0x01;
 			}
 
 			for(int i=0; i<6; i++){
@@ -97,7 +99,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan2) {
 					HAL_GPIO_WritePin(solv_ports[i], solv_pins[i], GPIO_PIN_SET);
 					break;
 
-				case 2:
+				case 0:
 					HAL_GPIO_WritePin(solv_ports[i], solv_pins[i], GPIO_PIN_RESET);
 					break;
 				}
@@ -168,10 +170,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan2) {
 
 				}
 			}
-		}
 
+
+		}
 	}
 }
+
 
 
 /* USER CODE END 0 */
@@ -213,10 +217,8 @@ int main(void)
   HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
   CAN_FilterTypeDef filter;
-//  uint32_t fId   =  0x400 << 21;        // フィルターID
-//  uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
-  uint32_t fId   = 0;        // フィルターID
-  uint32_t fMask = 0; // フィルターマスク
+  uint32_t fId   =  0x200 << 21;        // フィルターID
+  uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
 
   filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ??��?��?
   filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ??��?��?
