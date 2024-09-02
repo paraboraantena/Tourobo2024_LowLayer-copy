@@ -36,6 +36,8 @@
 #define CAN_SIZE 8
 #define BUF_SIZE 2
 #define MASTER_ID 0x010
+
+#define DEBUG
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -75,7 +77,7 @@ enum RX_COMMAND{
 	SET_THRE=0x00, START, STOP, ASK
 };
 
-volatile uint16_t adc_buf[BUF_SIZE] = {0};
+volatile uint16_t adc_buf[BUF_SIZE] = {100u};
 volatile float current_threshold[BUF_SIZE] = {0.0f, 0.0f};
 volatile bool return_flag;
 volatile bool states[2];
@@ -118,12 +120,22 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_CAN_Start(&hcan);
   HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
-  HAL_ADC_Start(&hadc1);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf, BUF_SIZE);
+  HAL_ADC_Start_DMA(&hadc1, adc_buf, BUF_SIZE);
   HAL_TIM_Base_Stop_IT(&htim16);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
 
   return_flag = false;
+
+#ifdef DEBUG
+  current_threshold[KAI] = 1.0f;
+  current_threshold[KON] = 1.4f;
+
+  states[KAI] = states[KON] = true;
+
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+  HAL_TIM_Base_Start_IT(&htim16);
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -161,7 +173,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -173,10 +185,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -211,17 +223,17 @@ static void MX_ADC1_Init(void)
   /** Common config
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DMAContinuousRequests = ENABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -254,7 +266,7 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.SamplingTime = ADC_SAMPLETIME_19CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_61CYCLES_5;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -320,7 +332,7 @@ static void MX_CAN_Init(void)
   filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格納
   filter.FilterBank           = 0;
   filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモード
-  filter.SlaveStartFilterBank = 14;
+  filter.SlaveStartFilterBank = 0;
   filter.FilterActivation     = ENABLE;
 
   HAL_CAN_ConfigFilter(&hcan, &filter);
@@ -344,7 +356,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x2000090E;
+  hi2c1.Init.Timing = 0x00201D2B;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -441,7 +453,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_2, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2|GPIO_PIN_8, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
@@ -452,17 +464,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA0 PA2 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_2;
+  /*Configure GPIO pins : PA0 PA1 PA9 PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_9|GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA2 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA1 PA8 PA9 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB4 */
@@ -492,30 +504,30 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_)
 
     			HAL_TIM_Base_Stop_IT(&htim16);
     			HAL_TIM_Base_Start_IT(&htim16);
-    			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, SET);
     			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, SET);
+    			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, SET);
     			return_flag = true;
     			break;
     		case START:
     			HAL_TIM_Base_Stop_IT(&htim16);
     			HAL_TIM_Base_Start_IT(&htim16);
     			if(rx_data[1]){
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, SET);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, SET);
 					states[KAI] = true;
 				}
     			if(rx_data[2]){
-    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, SET);
+    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, SET);
     				states[KON] = true;
 				}
     			return_flag = true;
     			break;
     		case STOP:
     			if(rx_data[1]){
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
 					states[KAI] = false;
 				}
     			if(rx_data[2]){
-    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+    				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, RESET);
     				states[KON] = false;
 				}
 
@@ -553,15 +565,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
 	float current_buf[BUF_SIZE];
 	if(htim->Instance == TIM16){
-		current_buf[KAI] = adc_buf[KAI]*4096.0f/13.2f;
-		current_buf[KON] = adc_buf[KON]*4096.0f/13.2f;
+		current_buf[KAI] = ((float)adc_buf[KAI]*3.3f/4096.0f-0.27)/(13.2f*2.7/3.3)*1000;
+		current_buf[KON] = ((float)adc_buf[KON]*3.3f/4096.0f-0.27)/(13.2f*2.7/3.3)*1000;
 
 		if(current_buf[0]>current_threshold[0]){
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
     		states[KAI] = false;
 		}
 		if(current_buf[1]>current_threshold[1]){
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, RESET);
     		states[KON] = false;
 		}
 
@@ -588,8 +600,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
 
 void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc){
 	if(hadc->Instance == ADC1){
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, RESET);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, RESET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, RESET);
 
 		states[KAI] = false;
 		states[KON] = false;
