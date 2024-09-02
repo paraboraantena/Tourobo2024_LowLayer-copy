@@ -31,7 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_NUMBER 284
+#define LED_NUMBER 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -209,26 +209,28 @@ int main(void)
   MX_SPI2_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-	CAN_FilterTypeDef filter;
-	uint32_t fId1 = 0x201 << 21; // フィルターID1
-	uint32_t fId2 = 0x0 << 21;  // フィルターID2
+  HAL_CAN_Start(&hcan2);
+  HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
-	filter.FilterIdHigh         = fId1 >> 16;            // フィルターID1の上�?16ビッ�?
-	filter.FilterIdLow          = fId1;                  // フィルターID1の下�?16ビッ�?
-	filter.FilterMaskIdHigh     = fId2 >> 16;            // フィルターID2の上�?16ビッ�?
-	filter.FilterMaskIdLow      = fId2;                  // フィルターID2の下�?16ビッ�?
-	filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー�?
-	filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格�?
-	filter.FilterBank           = 0;
-	filter.FilterMode           = CAN_FILTERMODE_IDLIST; // IDリストモー�?
-	filter.SlaveStartFilterBank = 14;
-	filter.FilterActivation     = ENABLE;
+  CAN_FilterTypeDef filter;
+//  uint32_t fId   =  0x400 << 21;        // フィルターID
+//  uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
+  uint32_t fId   = 0;        // フィルターID
+  uint32_t fMask = 0; // フィルターマスク
 
-	HAL_CAN_ConfigFilter(&hcan2, &filter);
-	// CANスター ?
-	HAL_CAN_Start(&hcan2);
-	// 割り込み有効
-	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ??��?��?
+  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ??��?��?
+  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ??��?��?
+  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ??��?��?
+  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー??��?��?
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格??��?��?
+  filter.FilterBank           = 0;
+  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー??��?��?
+  filter.SlaveStartFilterBank = 0;
+  filter.FilterActivation     = ENABLE;
+
+  HAL_CAN_ConfigFilter(&hcan2, &filter);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -307,7 +309,7 @@ static void MX_CAN2_Init(void)
 
   /* USER CODE END CAN2_Init 1 */
   hcan2.Instance = CAN2;
-  hcan2.Init.Prescaler = 2;
+  hcan2.Init.Prescaler = 4;
   hcan2.Init.Mode = CAN_MODE_NORMAL;
   hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan2.Init.TimeSeg1 = CAN_BS1_11TQ;
