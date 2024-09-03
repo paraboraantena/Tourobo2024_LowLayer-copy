@@ -586,8 +586,8 @@ void StartDefaultTask(void const * argument)
 
 	/* Infinite loop */
 	for (;;) {
-		lwip_sendto(socket, (uint8_t*) txbuf, sizeof(txbuf), 0, (struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�???��?��信する
-		n = lwip_recvfrom(socket, (uint8_t*) rxbuf, sizeof(rxbuf), (int) NULL, (struct sockaddr*) &rxAddr, &len); //受信処??��?��?(blocking)
+		lwip_sendto(socket, (uint16_t*) txbuf, sizeof(txbuf), 0, (struct sockaddr*) &txAddr, sizeof(txAddr)); //受信したら�???��?��信する
+		n = lwip_recvfrom(socket, (uint16_t*) rxbuf, sizeof(rxbuf), (int) NULL, (struct sockaddr*) &rxAddr, &len); //受信処??��?��?(blocking)
 
 		// UDPから受け取った足回りデータ
 		for(int i = 0; i < 4; i++) {
