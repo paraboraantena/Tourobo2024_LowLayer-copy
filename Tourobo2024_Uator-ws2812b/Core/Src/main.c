@@ -32,7 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_NUMBER 10
+#define LED_NUMBER 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -116,7 +116,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 //			}
 
 			panta_expand = (data[0]&0b00000010)>>1;
-			panta_dunk  =  (data[0]&0b00000001)>>1;
+			panta_dunk  =  (data[0]&0b00000001);
 
 			if(panta_expand==0){
 				HAL_GPIO_WritePin(solv_ports[0],solv_pins[0],GPIO_PIN_RESET);//panta off
