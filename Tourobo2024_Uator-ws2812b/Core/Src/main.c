@@ -1,6 +1,6 @@
 /* USER CODE BEGIN Header */
-/**LedUator用のプログラム
- * 2024/09/03　新パンタ仕様に変更
+/**LedUator用のプログラ?��?
+ * 2024/09/03?��?新パンタ仕様に変更
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
@@ -46,6 +46,8 @@ CAN_HandleTypeDef hcan2;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
+TIM_HandleTypeDef htim7;
+
 /* USER CODE BEGIN PV */
 //for can
 uint32_t id;
@@ -74,7 +76,9 @@ static void MX_GPIO_Init(void);
 static void MX_CAN2_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
+void wait_290us(void);
 void setLED(int, int, int);
 void ws2812b_send(int, int, int);
 void ws2812b_send_green (void);
@@ -243,7 +247,11 @@ int main(void)
   MX_CAN2_Init();
   MX_SPI2_Init();
   MX_SPI1_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
+  //TIM
+  HAL_TIM_Base_Start(&htim7);
+  //CAN
   HAL_CAN_Start(&hcan2);
   HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
 
@@ -251,14 +259,14 @@ int main(void)
   uint32_t fId   =  0x200 << 21;        // フィルターID
   uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
 
-  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ??��?��?
-  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ??��?��?
-  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ??��?��?
-  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ??��?��?
-  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー??��?��?
-  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格??��?��?
+  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上�?16ビッ????��?��??��?��???��?��??��?��?
+  filter.FilterIdLow          = fId;                   // フィルターIDの下�?16ビッ????��?��??��?��???��?��??��?��?
+  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上�?16ビッ????��?��??��?��???��?��??��?��?
+  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下�?16ビッ????��?��??��?��???��?��??��?��?
+  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モー????��?��??��?��???��?��??��?��?
+  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格????��?��??��?��???��?��??��?��?
   filter.FilterBank           = 0;
-  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー??��?��?
+  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモー????��?��??��?��???��?��??��?��?
   filter.SlaveStartFilterBank = 0;
   filter.FilterActivation     = ENABLE;
 
@@ -270,7 +278,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay(1000);
+	  wait_290us();
 	  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
 	  ws2812b_send_green ();
     /* USER CODE END WHILE */
@@ -440,6 +448,44 @@ static void MX_SPI2_Init(void)
 }
 
 /**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 32-1;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 1000-1;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -525,6 +571,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void wait_290us(){
+	htim7.Instance->CNT = 0;
+	while((htim7.Instance->CNT)<290);
+}
+
 void ws2812b_send (int GREEN, int RED, int BLUE)
 {
 	uint32_t color = GREEN<<16 | RED<<8 | BLUE;
