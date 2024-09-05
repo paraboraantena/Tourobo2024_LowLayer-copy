@@ -102,7 +102,7 @@ uint8_t naeSole_CatchState = 0;//全部で4状???????��?��??��?��
 //uint8_t ringArm_expand = 0;
 uint8_t ringSole_FrontBack = 0;
 uint8_t ringSole_Catch = 0;
-uint8_t ringMot_UpDown = 0;
+uint8_t ringMot_UpDown = 1;//
 
 uint8_t test = 0;
 
@@ -234,10 +234,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 		}else if(naeSole_CatchState == 0b11){
 			//do nothing
 		}
-
 		ringSole_FrontBack = (data[0]&0b00000100)>>2;
 		ringSole_Catch     = (data[0]&0b00000010)>>1;
 		ringMot_UpDown     = (data[0]&0b00000001);
+		if(ringSole_FrontBack|ringMot_UpDown==0){
+			ringMot_UpDown = 1;
+		}
 	}
 }
 
