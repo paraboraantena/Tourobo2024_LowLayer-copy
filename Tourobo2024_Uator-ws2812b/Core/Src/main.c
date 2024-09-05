@@ -587,7 +587,7 @@ void ws2812b_send ()
 
 void ws2812b_send_green ()
 {
-	uint32_t color = 255<<16 | 0<<8 | 0;
+	uint32_t color = 153<<16 | 0<<8 | 0;
 	uint8_t sendData[24*LED_NUMBER];
 
 	for(int i=0; i<LED_NUMBER; i++){
