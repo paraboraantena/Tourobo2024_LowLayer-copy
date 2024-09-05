@@ -1,6 +1,7 @@
 /* USER CODE BEGIN Header */
 /**LedUator用のプログラ?��?
  * 2024/09/03?��?新パンタ仕様に変更
+ * 2024/09/05 パンタの縮伸,LEDのみを制御するように変更
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
@@ -99,45 +100,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 			data[0] = RxData[0];                                                 // Data
 			data[1] = RxData[1];
 
-//			for(int i=0; i<6; i++){
-//				solenoid[i] = (data[0] >> (5-i)) & 0x01;
-//			}
-
-//			for(int i=0; i<6; i++){
-//				switch(solenoid[i]){
-//				case 1:
-//					HAL_GPIO_WritePin(solv_ports[i], solv_pins[i], GPIO_PIN_SET);
-//					break;
-//
-//				case 0:
-//					HAL_GPIO_WritePin(solv_ports[i], solv_pins[i], GPIO_PIN_RESET);
-//					break;
-//				}
-//			}
-
-			panta_expand = (data[0]&0b00000010)>>1;
-			panta_dunk  =  (data[0]&0b00000001);
+			panta_expand  =  data[0];//0 or 1
 
 			if(panta_expand==0){
 				HAL_GPIO_WritePin(solv_ports[0],solv_pins[0],GPIO_PIN_RESET);//panta off
 			}else{
 				HAL_GPIO_WritePin(solv_ports[0],solv_pins[0],GPIO_PIN_SET);//panta on
-			}
-
-			if(panta_dunk==0){
-				cnt = 0;
-				HAL_GPIO_WritePin(solv_ports[1],solv_pins[1],GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(solv_ports[2],solv_pins[2],GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(solv_ports[3],solv_pins[3],GPIO_PIN_RESET);
-			}else{
-				HAL_GPIO_WritePin(solv_ports[1],solv_pins[1],GPIO_PIN_SET);//arm push
-				cnt++;
-				if(cnt>5000){
-					HAL_GPIO_WritePin(solv_ports[2],solv_pins[2],GPIO_PIN_SET);//arm bottom pull
-				}
-				if(cnt>5500){
-					HAL_GPIO_WritePin(solv_ports[3],solv_pins[3],GPIO_PIN_SET);//arm hand open
-				}
 			}
 
 			for(int i=0; i<10; i++){
