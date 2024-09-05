@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_NUMBER 100
+#define LED_NUMBER 35
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,10 +62,23 @@ uint8_t failure = 0;
 //fot panta
 uint8_t panta_expand=0;
 uint8_t panta_dunk=0;
-int cnt=0;
 
 //for LED
 uint8_t LED_Data[3] = {};
+uint32_t color;
+uint32_t color_1;
+uint32_t color_2;
+uint32_t red = 0 << 16 | 153 << 8 | 0;
+uint32_t orange = 10 << 16 | 153 << 8 | 0;
+uint32_t yellow = 153 << 16 | 153 << 8 | 0;
+uint32_t green = 153 << 16 | 0 << 8 | 0;
+uint32_t light_blue =  153 << 16 | 0 << 8 | 153;
+uint32_t blue = 0 << 16 | 0 << 8 | 153;
+uint32_t purple = 0 << 16 | 153 << 8 | 153;
+uint32_t white = 153 << 16 | 153 << 8 | 153;
+
+uint8_t bicolorData[24*LED_NUMBER];
+uint8_t rainbowData[24*LED_NUMBER];
 
 GPIO_TypeDef* solv_ports[6] = {SOLV1_GPIO_Port, SOLV2_GPIO_Port, SOLV3_GPIO_Port, SOLV4_GPIO_Port, SOLV5_GPIO_Port, SOLV6_GPIO_Port};
 uint16_t solv_pins[6] = {SOLV1_Pin, SOLV2_Pin, SOLV3_Pin, SOLV4_Pin, SOLV5_Pin, SOLV6_Pin};
@@ -80,9 +93,12 @@ static void MX_SPI1_Init(void);
 static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
 void wait_290us(void);
-void setLED(int, int, int);
-void ws2812b_send(int, int, int);
+void wait_50ms(void);
+void ws2812b_send(void);
 void ws2812b_send_green (void);
+void ws2812b_bicolor(void);
+void ws2812b_rainbow(void);
+void rainbow_flow();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -107,73 +123,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 			}else{
 				HAL_GPIO_WritePin(solv_ports[0],solv_pins[0],GPIO_PIN_SET);//panta on
 			}
-
-			for(int i=0; i<10; i++){
-				switch(data[1]){
-
-				case 0:
-					LED_Data[0] = 0;
-					LED_Data[1] = 255;
-					LED_Data[2] = 0;
-					break;
-
-				case 1:
-					LED_Data[0] = 127;
-					LED_Data[1] = 255;
-					LED_Data[2] = 0;
-					break;
-
-				case 2:
-					LED_Data[0] = 255;
-					LED_Data[1] = 255;
-					LED_Data[2] = 0;
-					break;
-
-				case 3:
-					LED_Data[0] = 255;
-					LED_Data[1] = 127;
-					LED_Data[2] = 0;
-					break;
-
-				case 4:
-					LED_Data[0] = 255;
-					LED_Data[1] = 0;
-					LED_Data[2] = 127;
-					break;
-
-				case 5:
-					LED_Data[0] = 255;
-					LED_Data[1] = 0;
-					LED_Data[2] = 255;
-					break;
-
-				case 6:
-					LED_Data[0] = 0;
-					LED_Data[1] = 0;
-					LED_Data[2] = 255;
-					break;
-
-				case 7:
-					LED_Data[0] = 0;
-					LED_Data[1] = 127;
-					LED_Data[2] = 255;
-					break;
-
-				case 8:
-					LED_Data[0] = 0;
-					LED_Data[1] = 255;
-					LED_Data[2] = 255;
-					break;
-
-				case 9:
-					LED_Data[0] = 0;
-					LED_Data[1] = 255;
-					LED_Data[2] = 127;
-					break;
-
-				}
-			}
-
 
 		}
 	}
@@ -246,9 +195,75 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  wait_290us();
-	  ws2812b_send(LED_Data[0],LED_Data[1],LED_Data[2]);
 	  ws2812b_send_green ();
+
+	  for(int i=0; i<10; i++){
+		switch(data[1]){
+
+		case 0:
+			color = red;
+			ws2812b_send();
+			break;
+
+		case 1:
+			color = orange;
+			ws2812b_send();
+			break;
+
+		case 2:
+			color = yellow;
+			ws2812b_send();
+			break;
+
+		case 3:
+			color = green;
+			ws2812b_send();
+			break;
+
+		case 4:
+			color = light_blue;
+			ws2812b_send();
+			break;
+
+		case 5:
+			color_1 = red;
+			color_2 = blue;
+			ws2812b_bicolor();
+			break;
+
+		case 6:
+			color_1 = orange;
+			color_2 = light_blue;
+			ws2812b_bicolor();
+			break;
+
+		case 7:
+			color = blue;
+			ws2812b_send();
+			break;
+
+		case 8:
+			color = purple;
+			ws2812b_send();
+			break;
+
+		case 9:
+			color = white;
+			ws2812b_send();
+			break;
+
+		case 10:
+			ws2812b_rainbow();
+			break;
+
+		case 11:
+			rainbow_flow();
+			break;
+
+		}
+	}
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -544,9 +559,15 @@ void wait_290us(){
 	while((htim7.Instance->CNT)<290);
 }
 
-void ws2812b_send (int GREEN, int RED, int BLUE)
+void wait_50ms(){
+	for(int i=0; i<50; i++){
+		htim7.Instance->CNT = 0;
+		while((htim7.Instance->CNT)<999);
+	}
+}
+
+void ws2812b_send ()
 {
-	uint32_t color = GREEN<<16 | RED<<8 | BLUE;
 	uint8_t sendData[24*LED_NUMBER];
 
 	for(int i=0; i<LED_NUMBER; i++){
@@ -561,6 +582,7 @@ void ws2812b_send (int GREEN, int RED, int BLUE)
 	}
 
 	HAL_SPI_Transmit(&hspi2, sendData, 24*LED_NUMBER, 1000);
+	wait_290us();
 }
 
 void ws2812b_send_green ()
@@ -580,6 +602,135 @@ void ws2812b_send_green ()
 	}
 
 	HAL_SPI_Transmit(&hspi1, sendData, 24*LED_NUMBER, 1000);
+	wait_290us();
+}
+
+void ws2812b_bicolor(){
+
+	for(int i=0; i<LED_NUMBER; i++){
+		for(int j=0; j<24; j++){
+			int remainder = i%2;
+			switch(remainder){
+			case 0:
+				if (((color_1>>(23-j))&0x01) == 1) {
+					bicolorData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					bicolorData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+			case 1:
+				if (((color_2>>(23-j))&0x01) == 1) {
+					bicolorData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					bicolorData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+			}
+		}
+	}
+
+	HAL_SPI_Transmit(&hspi2, bicolorData, 24*LED_NUMBER, 1000);
+	wait_290us();
+}
+
+void ws2812b_rainbow(){
+	for(int i=0; i<LED_NUMBER; i++){
+		for(int j=0; j<24; j++){
+			int remainder = i%7;
+
+			switch(remainder){
+
+			case 0:
+				if (((red>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+
+			case 1:
+				if (((orange>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+
+			case 2:
+				if (((yellow>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+
+			case 3:
+				if (((green>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+
+			case 4:
+				if (((light_blue>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+
+			case 5:
+				if (((blue>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+
+			case 6:
+				if (((purple>>(23-j))&0x01) == 1) {
+					rainbowData[i*24 + j] = 0b11111000;  // store 1
+				}
+				else{
+					rainbowData[i*24 + j] = 0b11000000;  // store 0
+				}
+				break;
+			}
+		}
+	}
+
+	HAL_SPI_Transmit(&hspi2, rainbowData, 24*LED_NUMBER, 1000);
+	wait_290us();
+}
+
+void rainbow_flow(){
+
+	uint8_t hold[24] = {0};
+
+	for(int i=0; i<24; i++){
+		hold[i] = rainbowData[i];
+	}
+
+	for(int i=0; i<24*(LED_NUMBER-1); i++){
+		rainbowData[i] = rainbowData[i+24];
+	}
+
+	for(int i=0; i<24; i++){
+		rainbowData[24*(LED_NUMBER-1)+i] = hold[i];
+	}
+
+	HAL_SPI_Transmit(&hspi2, rainbowData, 24*LED_NUMBER, 1000);
+	wait_50ms();
+
 }
 /* USER CODE END 4 */
 
