@@ -80,7 +80,7 @@ uint32_t white = 140 << 16 | 140 << 8 | 140;
 uint32_t black = 0 << 16 | 0 << 8 | 0;
 uint8_t bicolorData[24*LED_NUMBER];
 uint8_t rainbowData[24*LED_NUMBER];
-
+//for solenoid
 GPIO_TypeDef* solv_ports[6] = {SOLV1_GPIO_Port, SOLV2_GPIO_Port, SOLV3_GPIO_Port, SOLV4_GPIO_Port, SOLV5_GPIO_Port, SOLV6_GPIO_Port};
 uint16_t solv_pins[6] = {SOLV1_Pin, SOLV2_Pin, SOLV3_Pin, SOLV4_Pin, SOLV5_Pin, SOLV6_Pin};
 /* USER CODE END PV */
