@@ -33,7 +33,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_NUMBER 35
+#define LED_NUMBER 150
+#define GREEN_LED_NUMBER 50
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -68,15 +69,15 @@ uint8_t LED_Data[3] = {};
 uint32_t color;
 uint32_t color_1;
 uint32_t color_2;
-uint32_t red = 0 << 16 | 153 << 8 | 0;
-uint32_t orange = 10 << 16 | 153 << 8 | 0;
-uint32_t yellow = 153 << 16 | 153 << 8 | 0;
-uint32_t green = 153 << 16 | 0 << 8 | 0;
-uint32_t light_blue =  153 << 16 | 0 << 8 | 153;
-uint32_t blue = 0 << 16 | 0 << 8 | 153;
-uint32_t purple = 0 << 16 | 153 << 8 | 153;
-uint32_t white = 153 << 16 | 153 << 8 | 153;
-
+uint32_t red = 0 << 16 | 140 << 8 | 0;
+uint32_t orange = 9 << 16 | 140 << 8 | 0;
+uint32_t yellow = 140 << 16 | 140 << 8 | 0;
+uint32_t green = 140 << 16 | 0 << 8 | 0;
+uint32_t light_blue =  140 << 16 | 0 << 8 | 140;
+uint32_t blue = 0 << 16 | 0 << 8 | 140;
+uint32_t purple = 0 << 16 | 140 << 8 | 140;
+uint32_t white = 140 << 16 | 140 << 8 | 140;
+uint32_t black = 0 << 16 | 0 << 8 | 0;
 uint8_t bicolorData[24*LED_NUMBER];
 uint8_t rainbowData[24*LED_NUMBER];
 
@@ -201,28 +202,33 @@ int main(void)
 		switch(data[1]){
 
 		case 0:
-			color = red;
-			ws2812b_send();
+			color_1 = red;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 1:
-			color = orange;
-			ws2812b_send();
+			color_1 = orange;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 2:
-			color = yellow;
-			ws2812b_send();
+			color_1 = yellow;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 3:
 			color = green;
-			ws2812b_send();
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 4:
-			color = light_blue;
-			ws2812b_send();
+			color_1 = light_blue;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 5:
@@ -238,18 +244,21 @@ int main(void)
 			break;
 
 		case 7:
-			color = blue;
-			ws2812b_send();
+			color_1 = blue;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 8:
-			color = purple;
-			ws2812b_send();
+			color_1 = purple;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 9:
-			color = white;
-			ws2812b_send();
+			color_1 = white;
+			color_2 = black;
+			ws2812b_bicolor();
 			break;
 
 		case 10:
