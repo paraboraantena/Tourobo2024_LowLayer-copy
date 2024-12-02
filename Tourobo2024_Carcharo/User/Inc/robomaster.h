@@ -9,7 +9,6 @@
 #define INC_ROBOMASTER_H_
 
 #include "stm32f7xx_hal.h"
-#include "arm_math.h"
 
 typedef struct {
 	// Input torque target
@@ -27,18 +26,17 @@ typedef struct {
 	uint32_t Event;
 
 	// Encoder FeedBack
-	float32_t EncoderAngularVelocity;
+	float EncoderAngularVelocity;
 
 	// Target Angular Velocity
-	float32_t TargetAngularVelocity;
-	float32_t PreTargetAngularVelocity;
+	float TargetAngularVelocity;
+	float PreTargetAngularVelocity;
 	// Angular Velocity Error
-	float32_t AngularVelocityError;
-	// PID instance
-	/*
-	 * C(z) = Kp + (1 - z^{-1}) * Kd + 1 / (1 - z^{-1}) * Ki
-	 */
-	arm_pid_instance_f32 PID;
+	float AngularVelocityError;
+	// Pre Angular Velocity Error
+	float PreAngularVelocityError;
+	// Integral
+	float Integral;
 } RobomasterTypedef;
 
 void Robomaster_InitZero(RobomasterTypedef *Robomaster);
